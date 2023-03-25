@@ -144,8 +144,8 @@ Vagrant.configure("2") do |config|
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
     	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
-#      	vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false
-#      		owner = "root", group = "root"
+      	vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false
+     		owner = "root", group = "root"
     	vm1.vm.network "private_network",
     				    ip: "172.16.100.11",
 						gateway: "172.16.100.254",
