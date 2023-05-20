@@ -140,7 +140,7 @@ Vagrant.configure("2") do |config|
 		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
     	vm1.vm.hostname = "otto-svr"
-    	vm1.vm.box = "bento/centos-7.9"
+    	vm1.vm.box = "ekko919/CentOS-7.x"
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
     	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -242,7 +242,7 @@ Vagrant.configure("2") do |config|
 		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm2.vm.hostname = "centos-01"
-		vm2.vm.box = "bento/centos-7.9"
+		vm2.vm.box = "ekko919/CentOS-7.x"
 		vm2.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm2.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -251,10 +251,10 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm2.vm.provider "virtualbox" do |vb|
-			vb.name = "CentOS_7.x (Client AG12)"
+			vb.name = "CentOS (Client AG12)"
 			vb.gui = false
-			vb.memory = "4096"
-			vb.cpus = 4
+			vb.memory = "1024"
+			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
 						"--vram", 
 						"128"
@@ -317,7 +317,7 @@ Vagrant.configure("2") do |config|
 		end
 
 #############################################
-#          PUPPET AGENT CENTOS 7.X          #
+#          PUPPET AGENT CENTOS 8.X          #
 #############################################
     
 	config.vm.define "centos-02" do |vm3|
@@ -325,7 +325,7 @@ Vagrant.configure("2") do |config|
 		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm3.vm.hostname = "centos-02"
-		vm3.vm.box = "bento/centos-7.9"
+		vm3.vm.box = "ekko919/CentOS-8.x"
 		vm3.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm3.vm.synced_folder "tmp", "/media/tmp", automount: true
 			owner = "vagrant", group = "vboxsf"
@@ -334,7 +334,7 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm3.vm.provider "virtualbox" do |vb|
-			vb.name = "CentOS_7.x (Client AG13)"
+			vb.name = "CentOS (Client AG13)"
 			vb.gui = false
 			vb.memory = "2048"
 			vb.cpus = 1
@@ -417,7 +417,7 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm4.vm.provider "virtualbox" do |vb|
-			vb.name = "Oracle Linux 7.x (Client AG14)"
+			vb.name = "Oracle Linux (Client AG14)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
@@ -582,8 +582,7 @@ Vagrant.configure("2") do |config|
 		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm6.vm.hostname = "ubuntu-01"
-		vm6.vm.box = "bento/ubuntu-18.04"
-#		vm6.vm.box = "ekko919/Ubuntu-18.x"
+		vm6.vm.box = "ekko919/Ubuntu-18.x"
 		vm6.vm.synced_folder ".", "/vagrant", disabled: true
 		vm6.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -671,7 +670,7 @@ Vagrant.configure("2") do |config|
 		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm7.vm.hostname = "ubuntu-02"
-		vm7.vm.box = "bento/ubuntu-18.04"
+		vm7.vm.box = "ekko919/Ubuntu-18.x"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
 		vm7.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -931,9 +930,7 @@ Vagrant.configure("2") do |config|
 		vm98.vm.network :forwarded_port, guest: 80, host: 8098, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm98.vm.hostname = "pvu-98.vsl.lab"
-		vm98.vm.box = "local_ub2"
-#		vm98.vm.box = "ekko919/Debian-11.x"
-#		vm98.vm.box = "bento/debian-11.4"
+		vm98.vm.box = "ekko919/Debian-11.x"
 		vm98.vm.synced_folder ".", "/vagrant", disabled: true
 		vm98.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -1033,7 +1030,7 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true		
 		vm99.vm.hostname = "pvu-99.vsl.lab" 
-		vm99.vm.box = "bento/oracle-8"
+		vm99.vm.box = "ekko919/CentOS-8.x"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
