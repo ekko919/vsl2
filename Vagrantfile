@@ -662,7 +662,7 @@ Vagrant.configure("2") do |config|
 		end
 
 #############################################
-#          PUPPET AGENT UBUNTU 18.04        #
+#          PUPPET AGENT UBUNTU 20.04        #
 #############################################
     
 	config.vm.define "ubuntu-02" do |vm7|
@@ -670,7 +670,7 @@ Vagrant.configure("2") do |config|
 		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm7.vm.hostname = "ubuntu-02"
-		vm7.vm.box = "ekko919/Ubuntu-18.x"
+		vm7.vm.box = "ekko919/Ubuntu-20.x"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
 		vm7.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -679,7 +679,7 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm7.vm.provider "virtualbox" do |vb|
-			vb.name = "Ubuntu_18.x (Client AG17)"
+			vb.name = "Ubuntu_20.x (Client AG17)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
