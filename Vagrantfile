@@ -1030,7 +1030,7 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true		
 		vm99.vm.hostname = "pvu-99.vsl.lab" 
-		vm99.vm.box = "ekko919/CentOS-8.x"
+		vm99.vm.box = "rocky8"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
