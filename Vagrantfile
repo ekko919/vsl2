@@ -1086,6 +1086,7 @@ Vagrant.configure("2") do |config|
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
+			/media/tmp/scripts/if-schema.sh
 			echo Done.
 			SHELL
 		vm99.vm.provision "shell", inline: <<-SHELL
