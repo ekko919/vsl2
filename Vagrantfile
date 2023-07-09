@@ -24,6 +24,38 @@ cp /media/tmp/dnsmasq.conf /etc/dnsmasq.conf
 SCRIPT
 
 ###############################
+$if_schema = <<-SCRIPT
+# Get the list of network connections
+connections=$(nmcli -t -f NAME,DEVICE con show)
+
+# Check if any connections have the name 'System eth'
+if echo "$connections" | grep -q 'System eth'; then
+  echo "Found connections named 'System eth'. Renaming..."
+
+  # Loop through each connection and rename it
+  while read -r line; do
+    connection=$(echo "$line" | cut -d: -f1)
+    device=$(echo "$line" | cut -d: -f2)
+    
+    if [[ $connection == *"System eth"* ]]; then
+      new_name=$(echo "$connection" | sed 's/System eth/eth/')
+      
+      # Rename the connection and associate it with the correct device
+      nmcli con modify "$connection" connection.id "$new_name" ifname "$device"
+      echo "Renamed connection '$connection' to '$new_name' and associated it with device '$device'"
+    fi
+  done <<< "$connections"
+
+  echo "Connections renamed successfully."
+else
+  echo "No connections named 'System eth' found."
+fi
+rm -rf /etc/NetworkManager/system-connections/*
+rm -rf /run/NetworkManager/system-connections/*
+rm -rf /usr/lib/NetworkManager/system-connections/*
+SCRIPT
+
+###############################
 $java_adj = <<-'SCRIPT'
 echo Update Java Environment Memory
 awk 'NR==9 {$0="JAVA_ARGS=\"-Xms512m -Xmx512m -Djruby.logger.class=com.puppetlabs.jruby_utils.jruby.Slf4jLogger\""} 1' /etc/sysconfig/puppetserver > /etc/sysconfig/puppetserver.tmp
@@ -1076,6 +1108,7 @@ Vagrant.configure("2") do |config|
 			yum install -y wget nano bind-utils
 			SHELL
 		vm99.vm.provision "shell", inline: $puppet_path
+		vm99.vm.provision "shell", inline: $if_schema
 		vm99.vm.provision "shell", inline: <<-SHELL
 			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
 			echo starting DNS MASQ Service
@@ -1086,7 +1119,6 @@ Vagrant.configure("2") do |config|
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
-			/media/tmp/scripts/if-schema.sh
 			echo Done.
 			SHELL
 		vm99.vm.provision "shell", inline: <<-SHELL
