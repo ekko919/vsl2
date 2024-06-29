@@ -50,9 +50,7 @@ if echo "$connections" | grep -q 'System eth'; then
 else
   echo "No connections named 'System eth' found."
 fi
-rm -rf /etc/NetworkManager/system-connections/*
-rm -rf /run/NetworkManager/system-connections/*
-rm -rf /usr/lib/NetworkManager/system-connections/*
+
 SCRIPT
 
 ###############################
@@ -172,7 +170,7 @@ Vagrant.configure("2") do |config|
 		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
     	vm1.vm.hostname = "otto-svr"
-    	vm1.vm.box = "ekko919/CentOS-7.x"
+    	vm1.vm.box = "ekko919/CentOS-8.x"
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
     	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -440,7 +438,8 @@ Vagrant.configure("2") do |config|
 		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm4.vm.hostname = "oracle-01"
-		vm4.vm.box = "bento/oracle-7.8"
+#		vm4.vm.box = "bento/oracle-7.8"
+		vm4.vm.box = "ekko919/Oracle-8.x"
 		vm4.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm4.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -524,7 +523,8 @@ Vagrant.configure("2") do |config|
 		vm5.vm.network :forwarded_port, guest: 80, host: 8015, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm5.vm.network :forwarded_port, guest: 443, host: 15443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm5.vm.hostname = "oracle-02"
-		vm5.vm.box = "bento/oracle-7.8"
+#		vm5.vm.box = "bento/oracle-7.8"
+		vm5.vm.box = "ekko919/Oracle-8.x"
 		vm5.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm5.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -962,7 +962,8 @@ Vagrant.configure("2") do |config|
 		vm98.vm.network :forwarded_port, guest: 80, host: 8098, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm98.vm.hostname = "pvu-98.vsl.lab"
-		vm98.vm.box = "ekko919/Debian-11.x"
+		vm98.vm.box = "ekko919/Debian-12.x"
+#		vm98.vm.box= "deb12"
 		vm98.vm.synced_folder ".", "/vagrant", disabled: true
 		vm98.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -973,8 +974,8 @@ Vagrant.configure("2") do |config|
 		vm98.vm.provider "virtualbox" do |vb|
 			vb.name = "PVU_98 (Client AG98)"
 			vb.gui = false
-			vb.memory = "1024"
-			vb.cpus = 1
+			vb.memory = "2048"
+			vb.cpus = 2
 			vb.customize ["modifyvm", :id,
 						"--vram", 
 						"16"
@@ -1062,7 +1063,8 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true		
 		vm99.vm.hostname = "pvu-99.vsl.lab" 
-		vm99.vm.box = "rocky8"
+		vm99.vm.box = "ekko919/Rocky-8.x"
+#		vm99.vm.box = "rhel7"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -1072,11 +1074,12 @@ Vagrant.configure("2") do |config|
 						ip: "172.16.100.99",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+		vm99.vm.disk :disk, size: "80GB", primary: true
 		vm99.vm.provider "virtualbox" do |vb|
 			vb.name = "PVU_99 (Client AG99)"
 			vb.gui = false
-			vb.memory = "1024"
-			vb.cpus = 1
+			vb.memory = "2048"
+			vb.cpus = 2
 			vb.customize ["modifyvm", :id,
 						"--vram", 
 						"128"

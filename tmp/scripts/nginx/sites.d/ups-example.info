@@ -1,0 +1,13 @@
+# config explanation:
+# the upstream block maps a list of servers to a name (`example` in this case)
+# when you reference this name in a proxy_pass directive (which belongs inside a `server` block), nginx will load balance between the servers defined in this `upstream` block
+
+# the upstream name (`example` in this case) is just an identifier within nginx, and only needs to correspond to the value of the `proxy_pass` directive
+# round robin is the default load balancing scheme and does not need to be specified in the block
+upstream example {
+    server 192.168.1.2;
+    server 192.168.1.3;
+    server 192.168.1.4;
+    # you can specify a port as well
+    server 192.168.1.5:8000;
+}
