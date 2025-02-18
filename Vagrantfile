@@ -264,15 +264,16 @@ Vagrant.configure("2") do |config|
     	end
 
 #############################################
-#          PUPPET AGENT CENTOS 7.X          #
+#          PUPPET AGENT RHEL 8.Xx           #
 #############################################
     
-	config.vm.define "centos-01" do |vm2|
+	config.vm.define "rhel-01" do |vm2|
 		vm2.vm.network :forwarded_port, guest: 22, host: 2212, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
-		vm2.vm.hostname = "centos-01"
-		vm2.vm.box = "ekko919/CentOS-7.x"
+		vm2.vm.hostname = "rhel-01"
+#		vm2.vm.box = "ekko919/CentOS-7.x"
+		vm2.vm.box = "ekko919/Rocky-8.x"
 		vm2.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm2.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -281,10 +282,10 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm2.vm.provider "virtualbox" do |vb|
-			vb.name = "CentOS (Client AG12)"
+			vb.name = "RHEL (Client AG12)"
 			vb.gui = false
-			vb.memory = "1024"
-			vb.cpus = 1
+			vb.memory = "2048"
+			vb.cpus = 2
 			vb.customize ["modifyvm", :id,
 						"--vram", 
 						"128"
@@ -347,15 +348,16 @@ Vagrant.configure("2") do |config|
 		end
 
 #############################################
-#          PUPPET AGENT CENTOS 8.X          #
+#          PUPPET AGENT RHEL 8.x            #
 #############################################
     
-	config.vm.define "centos-02" do |vm3|
+	config.vm.define "rhel-02" do |vm3|
 		vm3.vm.network :forwarded_port, guest: 22, host: 2213, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
-		vm3.vm.hostname = "centos-02"
-		vm3.vm.box = "ekko919/CentOS-8.x"
+		vm3.vm.hostname = "rhel-02"
+#		vm3.vm.box = "ekko919/CentOS-8.x"
+		vm3.vm.box = "ekko919/Rocky-8.x"
 		vm3.vm.synced_folder ".", "/vagrant", disabled: true 
 		vm3.vm.synced_folder "tmp", "/media/tmp", automount: true
 			owner = "vagrant", group = "vboxsf"
@@ -364,9 +366,9 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm3.vm.provider "virtualbox" do |vb|
-			vb.name = "CentOS (Client AG13)"
+			vb.name = "RHEL (Client AG13)"
 			vb.gui = false
-			vb.memory = "2048"
+			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
 						"--vram", 
@@ -1078,7 +1080,7 @@ Vagrant.configure("2") do |config|
 		vm99.vm.provider "virtualbox" do |vb|
 			vb.name = "PVU_99 (Client AG99)"
 			vb.gui = false
-			vb.memory = "2048"
+			vb.memory = "4096"
 			vb.cpus = 2
 			vb.customize ["modifyvm", :id,
 						"--vram", 

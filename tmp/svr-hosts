@@ -6,8 +6,8 @@
 ### vagrant-hostmanager-start ###
 
 172.16.100.11   otto-svr.vsl.lab            otto-svr
-172.16.100.12   centos-01.vsl.lab           centos-01
-172.16.100.13   centos-02.vsl.lab           centos-02
+172.16.100.12   rhel-01.vsl.lab             rhel-01
+172.16.100.13   rhel-02.vsl.lab             rhel-02
 172.16.100.14   oracle-01.vsl.lab           oracle-01
 172.16.100.15   oracle-02.vsl.lab           oracle-02
 172.16.100.16   ubuntu-01.vsl.lab           ubuntu-01
