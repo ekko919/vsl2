@@ -68,6 +68,155 @@ cp /media/tmp/ntp.conf /etc/ntp.conf
 SCRIPT
 
 ##############################
+$puppet_install = <<-'SCRIPT'
+# This script is designed for Vagrantfiles that provision
+# multiple virtual machines with different operating systems.
+# It checks the OS family and then runs the correct Puppet
+# provisioning steps for that system.
+
+# Get the OS family (e.g., 'debian', 'redhat', 'suse')
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_FAMILY=${ID_LIKE}
+    # For some systems like openSUSE, ID_LIKE is not set. Use ID instead.
+    if [ -z "$OS_FAMILY" ]; then
+        OS_FAMILY=${ID}
+    fi
+else
+    echo "Error: Could not determine OS family."
+    exit 1
+fi
+
+# Use a case statement on the OS family to run the correct provisioning.
+case "$OS_FAMILY" in
+    debian)
+        echo "Detected Debian-based OS. Proceeding with Debian provisioning."
+        # Get the Debian codename (e.g., 'stretch', 'bullseye', 'bookworm')
+        DEBIAN_CODENAME=$(lsb_release -cs)
+
+        # Initialize variables for Puppet release URL and version.
+        PUPPET_RELEASE_URL=""
+        PUPPET_VERSION=""
+
+        # Use a case statement to handle different Debian versions.
+        case "$DEBIAN_CODENAME" in
+            stretch)
+                PUPPET_RELEASE_URL="https://apt.puppetlabs.com/puppet6-release-stretch.deb"
+                PUPPET_VERSION="puppet6"
+                ;;
+            buster|bullseye)
+                PUPPET_RELEASE_URL="https://apt.puppetlabs.com/puppet7-release-${DEBIAN_CODENAME}.deb"
+                PUPPET_VERSION="puppet7"
+                ;;
+            bookworm)
+                PUPPET_RELEASE_URL="https://apt.puppet.com/puppet8-release-bookworm.deb"
+                PUPPET_VERSION="puppet8"
+                ;;
+            *)
+                echo "Error: Unsupported Debian version: ${DEBIAN_CODENAME}. Puppet cannot be installed."
+                exit 1
+                ;;
+        esac
+
+        echo "Detected Debian version: ${DEBIAN_CODENAME}. Installing Puppet version ${PUPPET_VERSION}."
+
+        # Download and install the correct Puppet release package.
+        wget "$PUPPET_RELEASE_URL"
+        dpkg -i "$(basename "$PUPPET_RELEASE_URL")"
+
+        # Update package lists and install puppet-agent.
+        apt-get update
+        apt-get install -y puppet-agent
+
+        # Install other required tools for Debian.
+        apt-get install -y nano gcc make perl linux-headers-$(uname -r) bind9utils
+        systemctl set-default multi-user.target
+        ;;
+
+    rhel|fedora)
+        echo "Detected RHEL-based OS. Proceeding with RHEL provisioning."
+        # Get the RHEL major version.
+        RHEL_VERSION=$(rpm -E %rhel)
+
+        # Use a nested case statement to handle different RHEL versions.
+        case "$RHEL_VERSION" in
+            7)
+                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet6-release-el-7.noarch.rpm"
+                PUPPET_VERSION="puppet6"
+                ;;
+            8)
+                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet7-release-el-8.noarch.rpm"
+                PUPPET_VERSION="puppet7"
+                ;;
+            9)
+                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet8-release-el-9.noarch.rpm"
+                PUPPET_VERSION="puppet8"
+                ;;
+            *)
+                echo "Error: Unsupported RHEL version: ${RHEL_VERSION}. Puppet cannot be installed."
+                exit 1
+                ;;
+        esac
+
+        echo "Detected RHEL version: ${RHEL_VERSION}. Installing Puppet version ${PUPPET_VERSION}."
+
+        # Install the Puppet release RPM.
+        rpm -Uvh "$PUPPET_RELEASE_RPM"
+        
+        # Install puppet-agent.
+        yum install -y puppet-agent
+
+        # Install other required tools for RHEL.
+        yum install -y nano gcc make perl kernel-devel-$(uname -r) bind-utils
+        systemctl set-default multi-user.target
+        ;;
+
+    suse|opensuse)
+        echo "Detected SUSE-based OS. Proceeding with SUSE provisioning."
+        # Get the SUSE major version.
+        SUSE_VERSION=$(grep VERSION_ID /etc/os-release | cut -d'=' -f2 | cut -d'.' -f1)
+
+        # Use a nested case statement to handle different SUSE versions.
+        case "$SUSE_VERSION" in
+            12)
+                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet6-release-sles-12.noarch.rpm"
+                PUPPET_VERSION="puppet6"
+                ;;
+            15)
+                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet7-release-sles-15.noarch.rpm"
+                PUPPET_VERSION="puppet7"
+                ;;
+            16)
+                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet8-release-sles-16.noarch.rpm"
+                PUPPET_VERSION="puppet8"
+                ;;
+            *)
+                echo "Error: Unsupported SUSE version: ${SUSE_VERSION}. Puppet cannot be installed."
+                exit 1
+                ;;
+        esac
+        echo "Detected SUSE version: ${SUSE_VERSION}. Installing Puppet version ${PUPPET_VERSION}."
+
+        # Install the Puppet release RPM.
+        rpm -Uvh "$SUSE_RELEASE_RPM"
+        
+        # Install puppet-agent.
+        zypper install -y puppet-agent
+
+        # Install other required tools for SUSE.
+        zypper install -y nano gcc make perl kernel-devel bind-utils
+        systemctl set-default multi-user.target
+        ;;
+    
+    *)
+        echo "Error: Unsupported OS family: ${OS_FAMILY}. Puppet cannot be installed."
+        exit 1
+        ;;
+esac
+
+SCRIPT
+
+##############################
 $puppet_conf = <<-'SCRIPT'
 echo Provisioning puppet.conf
 rm /etc/puppetlabs/puppet/puppet.conf
@@ -138,6 +287,7 @@ SCRIPT
 Vagrant.configure("2") do |config|
 	config.vm.box_check_update = true
 	config.vm.boot_timeout = 60
+#	config.vm.box_url = "https://portal.cloud.hashicorp.com/vagrant/discover"
 
 	#SSH Key Config
 	config.ssh.forward_agent = false
@@ -167,20 +317,20 @@ Vagrant.configure("2") do |config|
   	
 	config.vm.define "otto-svr" do |vm1|
   		vm1.vm.network :forwarded_port, guest: 22, host: 2211, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		  vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
+		  vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
     	vm1.vm.hostname = "otto-svr"
     	vm1.vm.box = "ekko919/CentOS-8.x"
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
     	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
-      	vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false
+				owner = "vagrant", group = "vboxsf"
+      vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false
      		owner = "root", group = "root"
     	vm1.vm.network "private_network",
     				    ip: "172.16.100.11",
-						gateway: "172.16.100.254",
-						name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+								gateway: "172.16.100.254",
+								name: "vboxnet1"                                  # macOS/Linux Naming Schema
+#								name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
     	vm1.vm.provider "virtualbox" do |vb|
       		vb.name = "CentOS_7.x (Otto SVR)"
       		vb.gui = false
@@ -878,7 +1028,8 @@ Vagrant.configure("2") do |config|
 		vm9.vm.network :forwarded_port, guest: 80, host: 8019, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm9.vm.network :forwarded_port, guest: 443, host: 19443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm9.vm.hostname = "suse-02"
-		vm9.vm.box = "opensuse/Leap-15.2.x86_64"
+		vm9.vm.box = "bento/opensuse-leap-15"
+		vm9.vm.box_version = "202508.03.0"
 		vm9.vm.synced_folder ".", "/vagrant", disabled: true
 		vm9.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -922,6 +1073,7 @@ Vagrant.configure("2") do |config|
 			zypper -n in kernel-default-devel kernel-devel
 			SHELL
 		vm9.vm.provision "shell", inline: $puppet_hosts
+		vm9.vm.provision "shell", inline: $puppet_install
 		vm9.vm.provision "shell", inline: <<-SHELL
 			zypper -n in wget nano bind-utils
 			SHELL
@@ -965,7 +1117,7 @@ Vagrant.configure("2") do |config|
 		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm98.vm.hostname = "pvu-98.vsl.lab"
 		vm98.vm.box = "ekko919/Debian-12.x"
-#		vm98.vm.box= "deb12"
+		vm98.vm.box_version = "2025.08.18"
 		vm98.vm.synced_folder ".", "/vagrant", disabled: true
 		vm98.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
@@ -1021,9 +1173,8 @@ Vagrant.configure("2") do |config|
 			apt install -y linux-headers-generic dkms wget
 			SHELL
 		vm98.vm.provision "shell", inline: $puppet_hosts
+		vm98.vm.provision "shell", inline: $puppet_install
 		vm98.vm.provision "shell", inline: <<-SHELL
-			wget https://apt.puppetlabs.com/puppet6-release-stretch.deb
-			dpkg -i puppet6-release-stretch.deb
 			apt-get update
 			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
@@ -1066,7 +1217,7 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true		
 		vm99.vm.hostname = "pvu-99.vsl.lab" 
 		vm99.vm.box = "ekko919/Rocky-8.x"
-#		vm99.vm.box = "rhel7"
+		vm99.vm.box_version = "2023.07.08"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true
 			owner = "vagrant", group = "vboxsf"
