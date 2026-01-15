@@ -321,6 +321,7 @@ Vagrant.configure("2") do |config|
 		  vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
     	vm1.vm.hostname = "otto-svr"
     	vm1.vm.box = "ekko919/CentOS-8.x"
+		vm1.vm.box_version = "2023.05.16"
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
     	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
 				owner = "vagrant", group = "vboxsf"
@@ -1112,6 +1113,7 @@ Vagrant.configure("2") do |config|
 #############################################
     
 	config.vm.define "pvu-98" do |vm98|
+		vm98.ssh.shell = "/bin/bash"    # Declare VM Shell Environment
 		vm98.vm.network :forwarded_port, guest: 22, host: 2298, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm98.vm.network :forwarded_port, guest: 80, host: 8098, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "0.0.0.0", id: "https", auto_correct: true
