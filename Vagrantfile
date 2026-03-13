@@ -9,7 +9,7 @@
 #############################################
 #           VAGRANT GUEST SCRIPTS           #
 #############################################
-$disable_ipv6 = <<-SCRIPT
+$disable_ipv6 = <<-'SCRIPT'
 echo Disable IPv6 Listener
 cp /media/tmp/sysctl.conf /etc/sysctl.conf
 awk 'NR==18 {$0="AddressFamily inet"} 1' /etc/ssh/sshd_config > /etc/ssh/sshd_config.tmp
@@ -24,7 +24,7 @@ cp /media/tmp/dnsmasq.conf /etc/dnsmasq.conf
 SCRIPT
 
 ###############################
-$if_schema = <<-SCRIPT
+$if_schema = <<-'SCRIPT'
 # Get the list of network connections
 connections=$(nmcli -t -f NAME,DEVICE con show)
 
@@ -36,12 +36,12 @@ if echo "$connections" | grep -q 'System eth'; then
   while read -r line; do
     connection=$(echo "$line" | cut -d: -f1)
     device=$(echo "$line" | cut -d: -f2)
-    
+
     if [[ $connection == *"System eth"* ]]; then
       new_name=$(echo "$connection" | sed 's/System eth/eth/')
-      
+
       # Rename the connection and associate it with the correct device
-      nmcli con modify "$connection" connection.id "$new_name" ifname "$device"
+      nmcli con modify "$connection" connection.id "$new_name" connection.interface-name "$device"
       echo "Renamed connection '$connection' to '$new_name' and associated it with device '$device'"
     fi
   done <<< "$connections"
@@ -233,7 +233,7 @@ SCRIPT
 ###############################
 $puppet_env = <<-SCRIPT
 echo Setting Puppet Enviroment
-rm /etc/puppetlabs
+rm -rf /etc/puppetlabs
 mkdir /etc/puppetlabs
 SCRIPT
 
@@ -245,8 +245,11 @@ cp /media/tmp/ag-hosts /etc/hosts
 SCRIPT
 
 ##############################
-$puppet_path = <<-SCRIPT
+$puppet_path = <<-'SCRIPT'
 echo Setting Puppet PATH
+echo 'export PATH=/opt/puppetlabs/bin:$PATH' > /etc/profile.d/puppet.sh
+chmod +x /etc/profile.d/puppet.sh
+ln -sf /opt/puppetlabs/bin/puppet /usr/bin/puppet 2>/dev/null || true
 export PATH=/opt/puppetlabs/bin:$PATH
 SCRIPT
 
@@ -286,7 +289,7 @@ SCRIPT
 
 Vagrant.configure("2") do |config|
 	config.vm.box_check_update = true
-	config.vm.boot_timeout = 60
+	config.vm.boot_timeout = 300
 #	config.vm.box_url = "https://portal.cloud.hashicorp.com/vagrant/discover"
 
 	#SSH Key Config
@@ -306,9 +309,9 @@ Vagrant.configure("2") do |config|
 	# Configure vagrant-vbguest Plugin
 	if Vagrant.has_plugin? "vagrant-vbguest"
 		config.vbguest.iso_path = ["vbguest/VBoxGuestAdditions.iso"]
-		config.vbguest.no_install  = false
-		config.vbguest.auto_update = true
-		config.vbguest.no_remote   = false
+		config.vbguest.no_install  = true
+		config.vbguest.auto_update = false
+		config.vbguest.no_remote   = true
 	end
 
 #############################################
@@ -323,17 +326,17 @@ Vagrant.configure("2") do |config|
     	vm1.vm.box = "ekko919/CentOS-8.x"
 		vm1.vm.box_version = "2023.05.16"
     	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
-    	vm1.vm.synced_folder "tmp", "/media/tmp", create: true
-				owner = "vagrant", group = "vboxsf"
-      vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false
-     		owner = "root", group = "root"
+    	vm1.vm.synced_folder "tmp", "/media/tmp", create: true,
+				owner: "vagrant", group: "vboxsf"
+      vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false,
+     		owner: "root", group: "root"
     	vm1.vm.network "private_network",
     				    ip: "172.16.100.11",
 								gateway: "172.16.100.254",
 								name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #								name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
     	vm1.vm.provider "virtualbox" do |vb|
-      		vb.name = "CentOS_7.x (Otto SVR)"
+      		vb.name = "CentOS_8.x (Otto SVR)"
       		vb.gui = false
       		vb.memory = "2048"
       		vb.cpus = 2
@@ -367,8 +370,17 @@ Vagrant.configure("2") do |config|
     	vm1.vm.provision "shell", inline: 'sysctl -p'
     	vm1.vm.provision "shell", inline: $puppet_svr_hosts
     	vm1.vm.provision "shell", inline: <<-SHELL
-       		yum -y install http://yum.puppetlabs.com/puppet6-release-el-7.noarch.rpm
-       		yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+			echo Fixing CentOS 8 EOL repository configuration...
+			sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*.repo
+			sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
+			yum clean all
+			echo Unmounting puppetlabs code share to allow RPM install...
+			umount /etc/puppetlabs/code 2>/dev/null || true
+			echo Done.
+			SHELL
+    	vm1.vm.provision "shell", inline: <<-SHELL
+       		yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
+       		yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
        		yum -y install nano gcc make perl kernel-devel
        		yum -y install bind-utils ntp
        		yum -y install puppetserver
@@ -385,7 +397,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -415,7 +427,7 @@ Vagrant.configure("2") do |config|
     	end
 
 #############################################
-#          PUPPET AGENT RHEL 8.Xx           #
+#          PUPPET AGENT RHEL 8.x            #
 #############################################
     
 	config.vm.define "rhel-01" do |vm2|
@@ -426,8 +438,8 @@ Vagrant.configure("2") do |config|
 #		vm2.vm.box = "ekko919/CentOS-7.x"
 		vm2.vm.box = "ekko919/Rocky-8.x"
 		vm2.vm.synced_folder ".", "/vagrant", disabled: true 
-		vm2.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm2.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm2.vm.network "private_network",
 						ip: "172.16.100.12",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -465,11 +477,11 @@ Vagrant.configure("2") do |config|
 			end
 		vm2.vm.provision "shell", inline: $puppet_hosts
 		vm2.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet6-release-el-7.noarch.rpm
-			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet
+			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm2.vm.provision "shell", inline: $puppet_path
@@ -479,7 +491,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -510,8 +522,8 @@ Vagrant.configure("2") do |config|
 #		vm3.vm.box = "ekko919/CentOS-8.x"
 		vm3.vm.box = "ekko919/Rocky-8.x"
 		vm3.vm.synced_folder ".", "/vagrant", disabled: true 
-		vm3.vm.synced_folder "tmp", "/media/tmp", automount: true
-			owner = "vagrant", group = "vboxsf"
+		vm3.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm3.vm.network "private_network",
 						ip: "172.16.100.13",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -549,11 +561,11 @@ Vagrant.configure("2") do |config|
 			end
 		vm3.vm.provision "shell", inline: $puppet_hosts
 		vm3.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet6-release-el-7.noarch.rpm
-			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet
+			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm3.vm.provision "shell", inline: $puppet_path
@@ -563,7 +575,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -594,8 +606,8 @@ Vagrant.configure("2") do |config|
 #		vm4.vm.box = "bento/oracle-7.8"
 		vm4.vm.box = "ekko919/Oracle-8.x"
 		vm4.vm.synced_folder ".", "/vagrant", disabled: true 
-		vm4.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm4.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm4.vm.network "private_network",
 						ip: "172.16.100.14",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -633,11 +645,11 @@ Vagrant.configure("2") do |config|
 			end
 		vm4.vm.provision "shell", inline: $puppet_hosts
 		vm4.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet6-release-el-7.noarch.rpm
-			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet
+			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm4.vm.provision "shell", inline: $puppet_path
@@ -647,7 +659,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -668,9 +680,9 @@ Vagrant.configure("2") do |config|
 		end
 
 #############################################
-#        PUPPET AGENT ORACLE LINUX          #
+#      PUPPET AGENT ORACLE LINUX 8.x (02)  #
 #############################################
-    
+
 	config.vm.define "oracle-02" do |vm5|
 		vm5.vm.network :forwarded_port, guest: 22, host: 2215, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm5.vm.network :forwarded_port, guest: 80, host: 8015, host_ip: "0.0.0.0", id: "http", auto_correct: true
@@ -679,14 +691,14 @@ Vagrant.configure("2") do |config|
 #		vm5.vm.box = "bento/oracle-7.8"
 		vm5.vm.box = "ekko919/Oracle-8.x"
 		vm5.vm.synced_folder ".", "/vagrant", disabled: true 
-		vm5.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm5.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm5.vm.network "private_network",
 						ip: "172.16.100.15",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm5.vm.provider "virtualbox" do |vb|
-			vb.name = "Oracle Linux 7.x (Client AG15)"
+			vb.name = "Oracle Linux 8.x (Client AG15)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
@@ -723,12 +735,12 @@ Vagrant.configure("2") do |config|
 			yum install -y kernel-uek-devel-$(uname -r) 
 			SHELL
 		vm5.vm.provision "shell", inline: $puppet_hosts
-		vm5.vm.provision "shell", args: "y", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet6-release-el-7.noarch.rpm
-			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+		vm5.vm.provision "shell", inline: <<-SHELL
+			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet
+			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm5.vm.provision "shell", inline: $puppet_path
@@ -738,7 +750,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -769,8 +781,8 @@ Vagrant.configure("2") do |config|
 		vm6.vm.hostname = "ubuntu-01"
 		vm6.vm.box = "ekko919/Ubuntu-18.x"
 		vm6.vm.synced_folder ".", "/vagrant", disabled: true
-		vm6.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm6.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm6.vm.network "private_network",
 						ip: "172.16.100.16",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -812,8 +824,8 @@ Vagrant.configure("2") do |config|
 			SHELL
 		vm6.vm.provision "shell", inline: $puppet_hosts
 		vm6.vm.provision "shell", inline: <<-SHELL
-			wget https://apt.puppetlabs.com/puppet6-release-stretch.deb
-			dpkg -i puppet6-release-stretch.deb
+			wget https://apt.puppetlabs.com/puppet7-release-bionic.deb
+			dpkg -i puppet7-release-bionic.deb
 			apt-get update
 			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
@@ -827,7 +839,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -857,8 +869,8 @@ Vagrant.configure("2") do |config|
 		vm7.vm.hostname = "ubuntu-02"
 		vm7.vm.box = "ekko919/Ubuntu-20.x"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
-		vm7.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm7.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm7.vm.network "private_network",
 						ip: "172.16.100.17",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -900,8 +912,8 @@ Vagrant.configure("2") do |config|
 			SHELL
 		vm7.vm.provision "shell", inline: $puppet_hosts
 		vm7.vm.provision "shell", inline: <<-SHELL
-			wget https://apt.puppetlabs.com/puppet6-release-stretch.deb
-			dpkg -i puppet6-release-stretch.deb
+			wget https://apt.puppetlabs.com/puppet7-release-focal.deb
+			dpkg -i puppet7-release-focal.deb
 			apt-get update
 			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
@@ -915,7 +927,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -945,8 +957,8 @@ Vagrant.configure("2") do |config|
 		vm8.vm.hostname = "suse-01"
 		vm8.vm.box = "bento/opensuse-leap-15"
 		vm8.vm.synced_folder ".", "/vagrant", disabled: true
-		vm8.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm8.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm8.vm.network "private_network",
 						ip: "172.16.100.18",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -997,7 +1009,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -1032,8 +1044,8 @@ Vagrant.configure("2") do |config|
 		vm9.vm.box = "bento/opensuse-leap-15"
 		vm9.vm.box_version = "202508.03.0"
 		vm9.vm.synced_folder ".", "/vagrant", disabled: true
-		vm9.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm9.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm9.vm.network "private_network",
 						ip: "172.16.100.19",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -1078,14 +1090,13 @@ Vagrant.configure("2") do |config|
 		vm9.vm.provision "shell", inline: <<-SHELL
 			zypper -n in wget nano bind-utils
 			SHELL
-		vm9.vm.provision "shell", inline: $puppet_suse
 		vm9.vm.provision "shell", inline: <<-SHELL
 			zypper in -y dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
 			echo starting DNS MASQ Service
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -1121,8 +1132,8 @@ Vagrant.configure("2") do |config|
 		vm98.vm.box = "ekko919/Debian-12.x"
 		vm98.vm.box_version = "2025.08.18"
 		vm98.vm.synced_folder ".", "/vagrant", disabled: true
-		vm98.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm98.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		vm98.vm.network "private_network",
 						ip: "172.16.100.98",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -1190,7 +1201,7 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
@@ -1221,8 +1232,8 @@ Vagrant.configure("2") do |config|
 		vm99.vm.box = "ekko919/Rocky-8.x"
 		vm99.vm.box_version = "2023.07.08"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
-		vm99.vm.synced_folder "tmp", "/media/tmp", create: true
-			owner = "vagrant", group = "vboxsf"
+		vm99.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
 		# Rocky Linux Guest Additions Failure to load...
 		# Run as root: yum install elfutils-libelf-devel -y
 		vm99.vm.network "private_network",
@@ -1273,16 +1284,27 @@ Vagrant.configure("2") do |config|
 			systemctl stop systemd-resolved
 			systemctl disable systemd-resolved
 			systemctl mask systemd-resolved
-			$dnsmasq_conf
+			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
 			echo Done.
 			SHELL
+		vm99.vm.provision "shell", inline: $puppet_install
 		vm99.vm.provision "shell", inline: <<-SHELL
 			systemctl set-default multi-user.target
 			SHELL
 		vm99.vm.provision "shell", inline: $resolv_conf
-		end	
+		vm99.vm.provision "shell", inline: $puppet_conf
+		vm99.vm.provision "shell", inline: <<-SHELL
+			echo starting Puppet Agent
+			systemctl start puppet
+			echo enabling Puppet Agent
+			systemctl enable puppet
+			echo Puppet Agent started and enabled...
+			echo ...
+			echo Done.
+			SHELL
+		end
 end
 
