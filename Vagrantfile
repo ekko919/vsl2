@@ -19,7 +19,7 @@ SCRIPT
 ###############################
 $dnsmasq_conf = <<-SCRIPT
 echo Provisioning DNSMASQ file
-rm /etc/dnsmasq.conf
+rm -f /etc/dnsmasq.conf
 cp /media/tmp/dnsmasq.conf /etc/dnsmasq.conf
 SCRIPT
 
@@ -50,236 +50,49 @@ if echo "$connections" | grep -q 'System eth'; then
 else
   echo "No connections named 'System eth' found."
 fi
-
 SCRIPT
 
 ###############################
-$java_adj = <<-'SCRIPT'
-echo Update Java Environment Memory
-awk 'NR==9 {$0="JAVA_ARGS=\"-Xms512m -Xmx512m -Djruby.logger.class=com.puppetlabs.jruby_utils.jruby.Slf4jLogger\""} 1' /etc/sysconfig/puppetserver > /etc/sysconfig/puppetserver.tmp
-mv /etc/sysconfig/puppetserver.tmp /etc/sysconfig/puppetserver
-SCRIPT
-
-###############################
-$ntp_conf = <<-SCRIPT
-echo Provisioning NTP file
-rm /etc/ntp.conf
-cp /media/tmp/ntp.conf /etc/ntp.conf
-SCRIPT
-
-##############################
-$puppet_install = <<-'SCRIPT'
-# This script is designed for Vagrantfiles that provision
-# multiple virtual machines with different operating systems.
-# It checks the OS family and then runs the correct Puppet
-# provisioning steps for that system.
-
-# Get the OS family (e.g., 'debian', 'redhat', 'suse')
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS_FAMILY=${ID_LIKE}
-    # For some systems like openSUSE, ID_LIKE is not set. Use ID instead.
-    if [ -z "$OS_FAMILY" ]; then
-        OS_FAMILY=${ID}
-    fi
-else
-    echo "Error: Could not determine OS family."
-    exit 1
-fi
-
-# Use a case statement on the OS family to run the correct provisioning.
-case "$OS_FAMILY" in
-    debian)
-        echo "Detected Debian-based OS. Proceeding with Debian provisioning."
-        # Get the Debian codename (e.g., 'stretch', 'bullseye', 'bookworm')
-        DEBIAN_CODENAME=$(lsb_release -cs)
-
-        # Initialize variables for Puppet release URL and version.
-        PUPPET_RELEASE_URL=""
-        PUPPET_VERSION=""
-
-        # Use a case statement to handle different Debian versions.
-        case "$DEBIAN_CODENAME" in
-            stretch)
-                PUPPET_RELEASE_URL="https://apt.puppetlabs.com/puppet6-release-stretch.deb"
-                PUPPET_VERSION="puppet6"
-                ;;
-            buster|bullseye)
-                PUPPET_RELEASE_URL="https://apt.puppetlabs.com/puppet7-release-${DEBIAN_CODENAME}.deb"
-                PUPPET_VERSION="puppet7"
-                ;;
-            bookworm)
-                PUPPET_RELEASE_URL="https://apt.puppet.com/puppet8-release-bookworm.deb"
-                PUPPET_VERSION="puppet8"
-                ;;
-            *)
-                echo "Error: Unsupported Debian version: ${DEBIAN_CODENAME}. Puppet cannot be installed."
-                exit 1
-                ;;
-        esac
-
-        echo "Detected Debian version: ${DEBIAN_CODENAME}. Installing Puppet version ${PUPPET_VERSION}."
-
-        # Download and install the correct Puppet release package.
-        wget "$PUPPET_RELEASE_URL"
-        dpkg -i "$(basename "$PUPPET_RELEASE_URL")"
-
-        # Update package lists and install puppet-agent.
-        apt-get update
-        apt-get install -y puppet-agent
-
-        # Install other required tools for Debian.
-        apt-get install -y nano gcc make perl linux-headers-$(uname -r) bind9utils
-        systemctl set-default multi-user.target
-        ;;
-
-    rhel|fedora)
-        echo "Detected RHEL-based OS. Proceeding with RHEL provisioning."
-        # Get the RHEL major version.
-        RHEL_VERSION=$(rpm -E %rhel)
-
-        # Use a nested case statement to handle different RHEL versions.
-        case "$RHEL_VERSION" in
-            7)
-                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet6-release-el-7.noarch.rpm"
-                PUPPET_VERSION="puppet6"
-                ;;
-            8)
-                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet7-release-el-8.noarch.rpm"
-                PUPPET_VERSION="puppet7"
-                ;;
-            9)
-                PUPPET_RELEASE_RPM="https://yum.puppet.com/puppet8-release-el-9.noarch.rpm"
-                PUPPET_VERSION="puppet8"
-                ;;
-            *)
-                echo "Error: Unsupported RHEL version: ${RHEL_VERSION}. Puppet cannot be installed."
-                exit 1
-                ;;
-        esac
-
-        echo "Detected RHEL version: ${RHEL_VERSION}. Installing Puppet version ${PUPPET_VERSION}."
-
-        # Install the Puppet release RPM.
-        rpm -Uvh "$PUPPET_RELEASE_RPM"
-        
-        # Install puppet-agent.
-        yum install -y puppet-agent
-
-        # Install other required tools for RHEL.
-        yum install -y nano gcc make perl kernel-devel-$(uname -r) bind-utils
-        systemctl set-default multi-user.target
-        ;;
-
-    suse|opensuse)
-        echo "Detected SUSE-based OS. Proceeding with SUSE provisioning."
-        # Get the SUSE major version.
-        SUSE_VERSION=$(grep VERSION_ID /etc/os-release | cut -d'=' -f2 | cut -d'.' -f1)
-
-        # Use a nested case statement to handle different SUSE versions.
-        case "$SUSE_VERSION" in
-            12)
-                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet6-release-sles-12.noarch.rpm"
-                PUPPET_VERSION="puppet6"
-                ;;
-            15)
-                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet7-release-sles-15.noarch.rpm"
-                PUPPET_VERSION="puppet7"
-                ;;
-            16)
-                SUSE_RELEASE_RPM="https://yum.puppet.com/puppet8-release-sles-16.noarch.rpm"
-                PUPPET_VERSION="puppet8"
-                ;;
-            *)
-                echo "Error: Unsupported SUSE version: ${SUSE_VERSION}. Puppet cannot be installed."
-                exit 1
-                ;;
-        esac
-        echo "Detected SUSE version: ${SUSE_VERSION}. Installing Puppet version ${PUPPET_VERSION}."
-
-        # Install the Puppet release RPM.
-        rpm -Uvh "$SUSE_RELEASE_RPM"
-        
-        # Install puppet-agent.
-        zypper install -y puppet-agent
-
-        # Install other required tools for SUSE.
-        zypper install -y nano gcc make perl kernel-devel bind-utils
-        systemctl set-default multi-user.target
-        ;;
-    
-    *)
-        echo "Error: Unsupported OS family: ${OS_FAMILY}. Puppet cannot be installed."
-        exit 1
-        ;;
-esac
-
-SCRIPT
-
-##############################
-$puppet_conf = <<-'SCRIPT'
-echo Provisioning puppet.conf
-rm /etc/puppetlabs/puppet/puppet.conf
-touch /etc/puppetlabs/puppet/puppet.conf
-
-puppet config set server 'otto-svr.vsl.lab' --section main
-puppet config set certname $HOSTNAME'.vsl.lab' --section main
-
-puppet config set environment production --section agent
-puppet config set runinterval 1m --section agent
-
-SCRIPT
-
-###############################
-$puppet_env = <<-SCRIPT
-echo Setting Puppet Enviroment
-rm -rf /etc/puppetlabs
-mkdir /etc/puppetlabs
-SCRIPT
-
-###############################
-$puppet_hosts = <<-SCRIPT
+$vsl_hosts = <<-SCRIPT
 echo Provisioning HOSTS file
-rm /etc/hosts
+rm -f /etc/hosts
 cp /media/tmp/ag-hosts /etc/hosts
 SCRIPT
 
-##############################
-$puppet_path = <<-'SCRIPT'
-echo Setting Puppet PATH
-echo 'export PATH=/opt/puppetlabs/bin:$PATH' > /etc/profile.d/puppet.sh
-chmod +x /etc/profile.d/puppet.sh
-ln -sf /opt/puppetlabs/bin/puppet /usr/bin/puppet 2>/dev/null || true
-export PATH=/opt/puppetlabs/bin:$PATH
+###############################
+$vsl_svr_hosts = <<-SCRIPT
+echo Provisioning HOSTS file
+rm -f /etc/hosts
+cp /media/tmp/svr-hosts /etc/hosts
 SCRIPT
 
 ###############################
-$puppet_suse = <<-SCRIPT
-echo Installing Puppet Repo
-mkdir /root/downloads
-cd /root/downloads
-wget https://yum.puppet.com/puppet6-release-sles-15.noarch.rpm
-zypper --no-gpg-checks in -y puppet6-release-sles-15.noarch.rpm
-SCRIPT
-
-##############################
-$puppet_svr_conf = <<-'SCRIPT'
-echo Provisioning puppet.conf
-cp /media/tmp/puppet-svr.conf /etc/puppetlabs/puppet/puppet.conf
-SCRIPT
-
-
-##############################
-$puppet_svr_hosts = <<-SCRIPT
-echo Provisioning HOSTS file
-rm /etc/hosts
-cp /media/tmp/svr-hosts /etc/hosts
+$ntp_svc = <<-'SCRIPT'
+echo 'setting TimeZone & NTP Services'
+timedatectl set-timezone America/New_York
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_FAMILY=${ID_LIKE:-$ID}
+fi
+case "$OS_FAMILY" in
+    *debian*)
+        NTP_SVC="chrony"
+        ;;
+    *)
+        NTP_SVC="chronyd"
+        ;;
+esac
+systemctl start $NTP_SVC
+systemctl enable $NTP_SVC
+chronyc makestep
+echo ...
+echo Done.
 SCRIPT
 
 ###############################
 $resolv_conf = <<-SCRIPT
 echo Provisioning RESOLVER file
-rm /etc/resolv.conf
+rm -f /etc/resolv.conf
 cp /media/tmp/resolv.conf /etc/resolv.conf
 SCRIPT
 
@@ -309,135 +122,105 @@ Vagrant.configure("2") do |config|
 	# Configure vagrant-vbguest Plugin
 	if Vagrant.has_plugin? "vagrant-vbguest"
 		config.vbguest.iso_path = ["vbguest/VBoxGuestAdditions.iso"]
-		config.vbguest.no_install  = true
+		config.vbguest.no_install = true
 		config.vbguest.auto_update = false
-		config.vbguest.no_remote   = true
+		config.vbguest.no_remote = true
 	end
 
 #############################################
 #      AUTOMATION SERVER CONFIGURATION      #
 #############################################
-  	
+
 	config.vm.define "otto-svr" do |vm1|
-  		vm1.vm.network :forwarded_port, guest: 22, host: 2211, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		  vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		  vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
-    	vm1.vm.hostname = "otto-svr"
-    	vm1.vm.box = "ekko919/CentOS-8.x"
+		vm1.vm.network :forwarded_port, guest: 22, host: 2211, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
+		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
+		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm1.vm.hostname = "otto-svr"
+		vm1.vm.box = "ekko919/CentOS-8.x"
 		vm1.vm.box_version = "2023.05.16"
-    	vm1.vm.synced_folder ".", "/vagrant", disabled: true 
-    	vm1.vm.synced_folder "tmp", "/media/tmp", create: true,
-				owner: "vagrant", group: "vboxsf"
-      vm1.vm.synced_folder "env/dev/puppetlabs/code/", "/etc/puppetlabs/code/", create: false,
-     		owner: "root", group: "root"
-    	vm1.vm.network "private_network",
-    				    ip: "172.16.100.11",
-								gateway: "172.16.100.254",
-								name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#								name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
-    	vm1.vm.provider "virtualbox" do |vb|
-      		vb.name = "CentOS_8.x (Otto SVR)"
-      		vb.gui = false
-      		vb.memory = "2048"
-      		vb.cpus = 2
-      		vb.customize ["modifyvm", :id,
-                    	"--vram", 
-                   	 	"128"
-                	 	]
-      		vb.customize ["storageattach", :id, 
-                   		"--storagectl", "IDE Controller", 
-                    	"--port", "0", "--device", "1", 
-                    	"--type", "dvddrive", 
-                    	"--medium", "emptydrive"
-                	 	]
-      		vb.customize ["modifyvm", :id,
-                     	"--graphicscontroller", "vmsvga"
-                	 	]
-      		vb.customize ["modifyvm", :id,
-                    	"--audio", "none"
-                	 	]
-          	vb.customize ["modifyvm", :id, 
-                        "--cableconnected1", "on"
-                     	]
-      		vb.customize ["modifyvm", :id,
-     		 		    "--nictype2", "82540em",
+		vm1.vm.synced_folder ".", "/vagrant", disabled: true
+		vm1.vm.synced_folder "tmp", "/media/tmp", create: true,
+			owner: "vagrant", group: "vboxsf"
+		vm1.vm.network "private_network",
+						ip: "172.16.100.11",
+						gateway: "172.16.100.254",
+						name: "vboxnet1"                                  # macOS/Linux Naming Schema
+#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+		vm1.vm.provider "virtualbox" do |vb|
+			vb.name = "CentOS_8.x (Otto SVR)"
+			vb.gui = false
+			vb.memory = "1024"
+			vb.cpus = 1
+			vb.customize ["modifyvm", :id,
+						"--vram",
+						"128"
+						]
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
+						"--medium", "emptydrive"
+						]
+			vb.customize ["modifyvm", :id,
+						"--graphicscontroller", "vmsvga"
+						]
+			vb.customize ["modifyvm", :id,
+						"--audio", "none"
+						]
+			vb.customize ["modifyvm", :id,
+						"--cableconnected1", "on"
+						]
+			vb.customize ["modifyvm", :id,
+						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-    		end
-    	vm1.vm.provision "shell", inline: $disable_ipv6
-    	vm1.vm.provision "shell", inline: 'sysctl -p'
-    	vm1.vm.provision "shell", inline: $puppet_svr_hosts
-    	vm1.vm.provision "shell", inline: <<-SHELL
+			end
+		vm1.vm.provision "shell", inline: $disable_ipv6
+		vm1.vm.provision "shell", inline: 'sysctl -p'
+		vm1.vm.provision "shell", inline: $vsl_svr_hosts
+		vm1.vm.provision "shell", inline: <<-SHELL
 			echo Fixing CentOS 8 EOL repository configuration...
 			sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*.repo
 			sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
 			yum clean all
-			echo Unmounting puppetlabs code share to allow RPM install...
-			umount /etc/puppetlabs/code 2>/dev/null || true
 			echo Done.
 			SHELL
-    	vm1.vm.provision "shell", inline: <<-SHELL
-       		yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
-       		yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-       		yum -y install nano gcc make perl kernel-devel
-       		yum -y install bind-utils ntp
-       		yum -y install puppetserver
-       		systemctl set-default multi-user.target
-      		SHELL
-    	vm1.vm.provision "shell", inline: $puppet_path
-    	vm1.vm.provision "shell", inline: $java_adj
-    	vm1.vm.provision "shell", inline: $puppet_svr_conf
-    	vm1.vm.provision "shell", inline: $resolv_conf
-    	vm1.vm.provision "shell", inline: $ntp_conf
-    	vm1.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+		vm1.vm.provision "shell", inline: <<-SHELL
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+			yum -y install nano gcc make perl kernel-devel
+			yum -y install bind-utils chrony
+			systemctl set-default multi-user.target
+			SHELL
+		vm1.vm.provision "shell", inline: $resolv_conf
+		vm1.vm.provision "shell", inline: <<-SHELL
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
 			echo Done.
 			SHELL
-       	vm1.vm.provision "shell", inline: <<-SHELL
-       		echo 'setting TimeZone & NTP Services'
-       		timedatectl set-timezone America/New_York
-       		ntpdate us.pool.ntp.org
-       		systemctl start ntpd
-       		systemctl enable ntpd
-       		echo ...
-       		echo Done.
-       		SHELL
-    	vm1.vm.provision "shell", inline: <<-SHELL
-       		echo starting Puppet Server
-       		systemctl start puppetserver
-       		echo enabling Puppet Server
-       		systemctl enable puppetserver
-       		echo Puppet Server started and enabled...
-       		echo ...
-       		echo Create Puppet Server Certificate
-       		rm -rf /etc/puppetlabs/puppet/ssl/*
-       		puppetserver ca setup --certname puppet-svr
-       		echo Done.
-       		SHELL
-    	end
+		vm1.vm.provision "shell", inline: $ntp_svc
+		end
 
 #############################################
-#          PUPPET AGENT RHEL 8.x            #
+#              RHEL Linux (01)              #
 #############################################
-    
+
 	config.vm.define "rhel-01" do |vm2|
 		vm2.vm.network :forwarded_port, guest: 22, host: 2212, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm2.vm.hostname = "rhel-01"
-#		vm2.vm.box = "ekko919/CentOS-7.x"
 		vm2.vm.box = "ekko919/Rocky-8.x"
-		vm2.vm.synced_folder ".", "/vagrant", disabled: true 
+		vm2.vm.synced_folder ".", "/vagrant", disabled: true
 		vm2.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm2.vm.network "private_network",
@@ -447,16 +230,16 @@ Vagrant.configure("2") do |config|
 		vm2.vm.provider "virtualbox" do |vb|
 			vb.name = "RHEL (Client AG12)"
 			vb.gui = false
-			vb.memory = "6144"
-			vb.cpus = 4
+			vb.memory = "1024"
+			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -465,32 +248,30 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
-		vm2.vm.provision "shell", inline: $puppet_hosts
+		vm2.vm.provision "shell", inline: $vsl_hosts
 		vm2.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
-		vm2.vm.provision "shell", inline: $puppet_path
 		vm2.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -498,30 +279,19 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm2.vm.provision "shell", inline: $resolv_conf
-		vm2.vm.provision "shell", inline: $puppet_conf
-		vm2.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 
 #############################################
-#          PUPPET AGENT RHEL 8.x            #
+#              RHEL Linux (02)              #
 #############################################
-    
+
 	config.vm.define "rhel-02" do |vm3|
 		vm3.vm.network :forwarded_port, guest: 22, host: 2213, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm3.vm.hostname = "rhel-02"
-#		vm3.vm.box = "ekko919/CentOS-8.x"
 		vm3.vm.box = "ekko919/Rocky-8.x"
-		vm3.vm.synced_folder ".", "/vagrant", disabled: true 
+		vm3.vm.synced_folder ".", "/vagrant", disabled: true
 		vm3.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm3.vm.network "private_network",
@@ -534,13 +304,13 @@ Vagrant.configure("2") do |config|
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -549,32 +319,30 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
-		vm3.vm.provision "shell", inline: $puppet_hosts
+		vm3.vm.provision "shell", inline: $vsl_hosts
 		vm3.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
-		vm3.vm.provision "shell", inline: $puppet_path
 		vm3.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -582,30 +350,19 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm3.vm.provision "shell", inline: $resolv_conf
-		vm3.vm.provision "shell", inline: $puppet_conf
-		vm3.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 
 #############################################
-#        PUPPET AGENT ORACLE LINUX          #
+#             Oracle Linux (01)             #
 #############################################
-    
+
 	config.vm.define "oracle-01" do |vm4|
 		vm4.vm.network :forwarded_port, guest: 22, host: 2214, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm4.vm.hostname = "oracle-01"
-#		vm4.vm.box = "bento/oracle-7.8"
 		vm4.vm.box = "ekko919/Oracle-8.x"
-		vm4.vm.synced_folder ".", "/vagrant", disabled: true 
+		vm4.vm.synced_folder ".", "/vagrant", disabled: true
 		vm4.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm4.vm.network "private_network",
@@ -618,13 +375,13 @@ Vagrant.configure("2") do |config|
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -633,32 +390,30 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
-		vm4.vm.provision "shell", inline: $puppet_hosts
+		vm4.vm.provision "shell", inline: $vsl_hosts
 		vm4.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
-		vm4.vm.provision "shell", inline: $puppet_path
 		vm4.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -666,21 +421,10 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm4.vm.provision "shell", inline: $resolv_conf
-		vm4.vm.provision "shell", inline: $puppet_conf
-		vm4.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			systemctl set-default multi-user.target
-			SHELL
 		end
 
 #############################################
-#      PUPPET AGENT ORACLE LINUX 8.x (02)  #
+#             Oracle Linux (02)             #
 #############################################
 
 	config.vm.define "oracle-02" do |vm5|
@@ -688,9 +432,8 @@ Vagrant.configure("2") do |config|
 		vm5.vm.network :forwarded_port, guest: 80, host: 8015, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm5.vm.network :forwarded_port, guest: 443, host: 15443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm5.vm.hostname = "oracle-02"
-#		vm5.vm.box = "bento/oracle-7.8"
 		vm5.vm.box = "ekko919/Oracle-8.x"
-		vm5.vm.synced_folder ".", "/vagrant", disabled: true 
+		vm5.vm.synced_folder ".", "/vagrant", disabled: true
 		vm5.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm5.vm.network "private_network",
@@ -698,18 +441,18 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm5.vm.provider "virtualbox" do |vb|
-			vb.name = "Oracle Linux 8.x (Client AG15)"
+			vb.name = "Oracle Linux (Client AG15)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -718,38 +461,30 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm5.vm.provision "shell", inline: $vsl_hosts
 		vm5.vm.provision "shell", inline: <<-SHELL
-			yum check-update
-			yum upgrade -y
-			yum install -y kernel-uek-headers-$(uname -r)
-			yum install -y kernel-uek-devel-$(uname -r) 
-			SHELL
-		vm5.vm.provision "shell", inline: $puppet_hosts
-		vm5.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://yum.puppetlabs.com/puppet7-release-el-8.noarch.rpm
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
-			yum -y install puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
-		vm5.vm.provision "shell", inline: $puppet_path
 		vm5.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -757,29 +492,18 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm5.vm.provision "shell", inline: $resolv_conf
-		vm5.vm.provision "shell", inline: $puppet_conf
-		vm5.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			systemctl set-default multi-user.target
-			SHELL
 		end
 
 #############################################
-#          PUPPET AGENT UBUNTU 18.04        #
+#             Debian Linux (01)             #
 #############################################
-    
-	config.vm.define "ubuntu-01" do |vm6|
+
+	config.vm.define "debian-01" do |vm6|
 		vm6.vm.network :forwarded_port, guest: 22, host: 2216, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "0.0.0.0", id: "https", auto_correct: true
-		vm6.vm.hostname = "ubuntu-01"
-		vm6.vm.box = "ekko919/Ubuntu-18.x"
+		vm6.vm.hostname = "debian-01"
+		vm6.vm.box = "ekko919/Debian-12.x"
 		vm6.vm.synced_folder ".", "/vagrant", disabled: true
 		vm6.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -788,18 +512,18 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm6.vm.provider "virtualbox" do |vb|
-			vb.name = "Ubuntu_18.x (Client AG16)"
+			vb.name = "Debian Linux (Client AG16)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -808,13 +532,13 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
@@ -822,23 +546,19 @@ Vagrant.configure("2") do |config|
 			apt update
 			apt install -y linux-headers-generic dkms
 			SHELL
-		vm6.vm.provision "shell", inline: $puppet_hosts
+		vm6.vm.provision "shell", inline: $vsl_hosts
 		vm6.vm.provision "shell", inline: <<-SHELL
-			wget https://apt.puppetlabs.com/puppet7-release-bionic.deb
-			dpkg -i puppet7-release-bionic.deb
-			apt-get update
-			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
 			apt-get install bind9utils -y
 			systemctl set-default multi-user.target
 			SHELL
-		vm6.vm.provision "shell", inline: $puppet_path
 		vm6.vm.provision "shell", inline: <<-SHELL
-			apt-get install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			apt-get install -y dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -846,28 +566,18 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm6.vm.provision "shell", inline: $resolv_conf
-		vm6.vm.provision "shell", inline: $puppet_conf
-		vm6.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 
 #############################################
-#          PUPPET AGENT UBUNTU 20.04        #
+#             Debian Linux (02)             #
 #############################################
-    
-	config.vm.define "ubuntu-02" do |vm7|
+
+	config.vm.define "debian-02" do |vm7|
 		vm7.vm.network :forwarded_port, guest: 22, host: 2217, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
-		vm7.vm.hostname = "ubuntu-02"
-		vm7.vm.box = "ekko919/Ubuntu-20.x"
+		vm7.vm.hostname = "debian-02"
+		vm7.vm.box = "ekko919/Debian-12.x"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
 		vm7.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -876,18 +586,18 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm7.vm.provider "virtualbox" do |vb|
-			vb.name = "Ubuntu_20.x (Client AG17)"
+			vb.name = "Debian Linux (Client AG17)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -896,37 +606,33 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
-						]					 
+						]
 			end
 		vm7.vm.provision "shell", inline: <<-SHELL
 			apt update
 			apt install -y linux-headers-generic dkms
 			SHELL
-		vm7.vm.provision "shell", inline: $puppet_hosts
+		vm7.vm.provision "shell", inline: $vsl_hosts
 		vm7.vm.provision "shell", inline: <<-SHELL
-			wget https://apt.puppetlabs.com/puppet7-release-focal.deb
-			dpkg -i puppet7-release-focal.deb
-			apt-get update
-			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
 			apt-get install bind9utils -y
 			systemctl set-default multi-user.target
 			SHELL
-		vm7.vm.provision "shell", inline: $puppet_path
 		vm7.vm.provision "shell", inline: <<-SHELL
-			apt-get install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			apt-get install -y dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -934,20 +640,10 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm7.vm.provision "shell", inline: $resolv_conf
-		vm7.vm.provision "shell", inline: $puppet_conf
-		vm7.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
-	
+
 #############################################
-#          PUPPET AGENT openSUSE 15.x       #
+#            openSUSE Linux (01)            #
 #############################################
 
 	config.vm.define "suse-01" do |vm8|
@@ -956,6 +652,7 @@ Vagrant.configure("2") do |config|
 		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm8.vm.hostname = "suse-01"
 		vm8.vm.box = "bento/opensuse-leap-15"
+		vm8.vm.box_version = "202508.03.0"
 		vm8.vm.synced_folder ".", "/vagrant", disabled: true
 		vm8.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -964,18 +661,18 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm8.vm.provider "virtualbox" do |vb|
-			vb.name = "openSUSE_15.x (Client AG18)"
+			vb.name = "openSUSE Linux (Client AG18)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "SATA Controller", 
-						"--port", "1", "--device", "0", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "SATA Controller",
+						"--port", "1", "--device", "0",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -984,13 +681,13 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
@@ -998,17 +695,17 @@ Vagrant.configure("2") do |config|
 			zypper -n up
 			zypper -n in kernel-default-devel kernel-devel
 			SHELL
-		vm8.vm.provision "shell", inline: $puppet_hosts
+		vm8.vm.provision "shell", inline: $vsl_hosts
 		vm8.vm.provision "shell", inline: <<-SHELL
 			zypper in -y wget nano bind-utils
 			SHELL
-		vm8.vm.provision "shell", inline: $puppet_suse
 		vm8.vm.provision "shell", inline: <<-SHELL
-			zypper in -y dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			zypper in -y dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -1016,24 +713,13 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm8.vm.provision "shell", inline: <<-SHELL
-			zypper --no-gpg-checks in -y puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm8.vm.provision "shell", inline: $resolv_conf
-		vm8.vm.provision "shell", inline: $puppet_conf
-		vm8.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
-		
+
 #############################################
-#          PUPPET AGENT openSUSE 15.x       #
+#            openSUSE Linux (02)            #
 #############################################
 
 	config.vm.define "suse-02" do |vm9|
@@ -1051,18 +737,18 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm9.vm.provider "virtualbox" do |vb|
-			vb.name = "openSUSE_15.x (Client AG19)"
+			vb.name = "openSUSE Linux (Client AG19)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "SATA Controller", 
-						"--port", "1", "--device", "0", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "SATA Controller",
+						"--port", "1", "--device", "0",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -1071,13 +757,13 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
@@ -1085,17 +771,17 @@ Vagrant.configure("2") do |config|
 			zypper -n up
 			zypper -n in kernel-default-devel kernel-devel
 			SHELL
-		vm9.vm.provision "shell", inline: $puppet_hosts
-		vm9.vm.provision "shell", inline: $puppet_install
+		vm9.vm.provision "shell", inline: $vsl_hosts
 		vm9.vm.provision "shell", inline: <<-SHELL
 			zypper -n in wget nano bind-utils
 			SHELL
 		vm9.vm.provision "shell", inline: <<-SHELL
-			zypper in -y dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			zypper in -y dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -1103,26 +789,15 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm9.vm.provision "shell", inline: <<-SHELL
-			zypper --no-gpg-checks in -y puppet-agent
 			systemctl set-default multi-user.target
 			SHELL
 		vm9.vm.provision "shell", inline: $resolv_conf
-		vm9.vm.provision "shell", inline: $puppet_conf
-		vm9.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 
 #############################################
-#          PUPPET AGENT PreVu 'APT'         #
+#            PreVu 'APT' (Debian)           #
 #############################################
-    
+
 	config.vm.define "pvu-98" do |vm98|
 		vm98.ssh.shell = "/bin/bash"    # Declare VM Shell Environment
 		vm98.vm.network :forwarded_port, guest: 22, host: 2298, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
@@ -1141,28 +816,28 @@ Vagrant.configure("2") do |config|
 		vm98.vm.provider "virtualbox" do |vb|
 			vb.name = "PVU_98 (Client AG98)"
 			vb.gui = false
-			vb.memory = "2048"
-			vb.cpus = 2
+			vb.memory = "1024"
+			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"16"
 						]
 			vb.customize ["modifyvm", :id,
-						"--nested-hw-virt", 
+						"--nested-hw-virt",
 						"on"
 						]
 			vb.customize ["modifyvm", :id,
-						"--uart1", 
+						"--uart1",
 						"0x3F8", "4"
 						]
-			vb.customize ["modifyvm", :id, 
-						"--uartmode1", 
+			vb.customize ["modifyvm", :id,
+						"--uartmode1",
 						"file", File::NULL
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "IDE Controller", 
-						"--port", "0", "--device", "1", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "IDE Controller",
+						"--port", "0", "--device", "1",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -1171,36 +846,34 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
-						]					 
+						]
 			end
 		vm98.vm.provision "shell", inline: <<-SHELL
 			apt update
 			apt install -y linux-headers-generic dkms wget
 			SHELL
-		vm98.vm.provision "shell", inline: $puppet_hosts
-		vm98.vm.provision "shell", inline: $puppet_install
+		vm98.vm.provision "shell", inline: $vsl_hosts
 		vm98.vm.provision "shell", inline: <<-SHELL
 			apt-get update
-			apt-get install -y puppet-agent
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
 			apt-get install bind9utils -y
 			systemctl set-default multi-user.target
 			SHELL
-		vm98.vm.provision "shell", inline: $puppet_path
 		vm98.vm.provision "shell", inline: <<-SHELL
-			apt-get install -y dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			apt-get install -y dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
@@ -1208,27 +881,17 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm98.vm.provision "shell", inline: $resolv_conf
-		vm98.vm.provision "shell", inline: $puppet_conf
-		vm98.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 
 #############################################
-#          PUPPET AGENT PreVu 'YUM'         #
+#            PreVu 'YUM' (Rocky)            #
 #############################################
 
 	config.vm.define "pvu-99" do |vm99|
 		vm99.vm.network :forwarded_port, guest: 22, host: 2299, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
 		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true		
-		vm99.vm.hostname = "pvu-99.vsl.lab" 
+		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm99.vm.hostname = "pvu-99.vsl.lab"
 		vm99.vm.box = "ekko919/Rocky-8.x"
 		vm99.vm.box_version = "2023.07.08"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
@@ -1244,16 +907,16 @@ Vagrant.configure("2") do |config|
 		vm99.vm.provider "virtualbox" do |vb|
 			vb.name = "PVU_99 (Client AG99)"
 			vb.gui = false
-			vb.memory = "4096"
-			vb.cpus = 2
+			vb.memory = "1024"
+			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
-						"--vram", 
+						"--vram",
 						"128"
 						]
-			vb.customize ["storageattach", :id, 
-						"--storagectl", "SATA Controller", 
-						"--port", "1", "--device", "0", 
-						"--type", "dvddrive", 
+			vb.customize ["storageattach", :id,
+						"--storagectl", "SATA Controller",
+						"--port", "1", "--device", "0",
+						"--type", "dvddrive",
 						"--medium", "emptydrive"
 						]
 			vb.customize ["modifyvm", :id,
@@ -1262,49 +925,37 @@ Vagrant.configure("2") do |config|
 			vb.customize ["modifyvm", :id,
 						"--audio", "none"
 						]
-			vb.customize ["modifyvm", :id, 
+			vb.customize ["modifyvm", :id,
 						"--cableconnected1", "on"
 						]
 			vb.customize ["modifyvm", :id,
 						"--nictype2", "82540em",
 						"--nic2", "natnetwork",
-						"--nat-network2", "Puppet_Network",
+						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
 			end
-		vm99.vm.provision "shell", inline: $puppet_hosts
+		vm99.vm.provision "shell", inline: $vsl_hosts
 		vm99.vm.provision "shell", inline: <<-SHELL
 			yum install -y wget nano bind-utils
 			SHELL
-		vm99.vm.provision "shell", inline: $puppet_path
 		vm99.vm.provision "shell", inline: $if_schema
 		vm99.vm.provision "shell", inline: <<-SHELL
-			yum -y install dnsmasq > /dev/null 2>&1 && systemctl stop dnsmasq
+			yum -y install dnsmasq
 			echo starting DNS MASQ Service
-			systemctl stop systemd-resolved
-			systemctl disable systemd-resolved
-			systemctl mask systemd-resolved
+			systemctl stop dnsmasq || true
+			systemctl stop systemd-resolved || true
+			systemctl disable systemd-resolved || true
+			systemctl mask systemd-resolved || true
 			#{$dnsmasq_conf}
 			systemctl start dnsmasq
 			systemctl enable dnsmasq
 			echo ...
 			echo Done.
 			SHELL
-		vm99.vm.provision "shell", inline: $puppet_install
 		vm99.vm.provision "shell", inline: <<-SHELL
 			systemctl set-default multi-user.target
 			SHELL
 		vm99.vm.provision "shell", inline: $resolv_conf
-		vm99.vm.provision "shell", inline: $puppet_conf
-		vm99.vm.provision "shell", inline: <<-SHELL
-			echo starting Puppet Agent
-			systemctl start puppet
-			echo enabling Puppet Agent
-			systemctl enable puppet
-			echo Puppet Agent started and enabled...
-			echo ...
-			echo Done.
-			SHELL
 		end
 end
-
