@@ -50,6 +50,9 @@ if echo "$connections" | grep -q 'System eth'; then
 else
   echo "No connections named 'System eth' found."
 fi
+
+# Remove any auto-generated stale profiles
+nmcli con delete "Wired connection 1" 2>/dev/null || true
 SCRIPT
 
 ###############################
@@ -136,8 +139,8 @@ Vagrant.configure("2") do |config|
 		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm1.vm.hostname = "otto-svr"
-		vm1.vm.box = "ekko919/CentOS-8.x"
-		vm1.vm.box_version = "2023.05.16"
+		vm1.vm.box = "ALMA-8"
+		vm1.vm.box_version = "0"
 		vm1.vm.synced_folder ".", "/vagrant", disabled: true
 		vm1.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -147,7 +150,7 @@ Vagrant.configure("2") do |config|
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm1.vm.provider "virtualbox" do |vb|
-			vb.name = "CentOS_8.x (Otto SVR)"
+			vb.name = "Linux.OS (Otto SVR)"
 			vb.gui = false
 			vb.memory = "1024"
 			vb.cpus = 1
@@ -179,13 +182,10 @@ Vagrant.configure("2") do |config|
 			end
 		vm1.vm.provision "shell", inline: $disable_ipv6
 		vm1.vm.provision "shell", inline: 'sysctl -p'
+		vm1.vm.provision "shell", inline: $if_schema
 		vm1.vm.provision "shell", inline: $vsl_svr_hosts
 		vm1.vm.provision "shell", inline: <<-SHELL
-			echo Fixing CentOS 8 EOL repository configuration...
-			sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*.repo
-			sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo
 			yum clean all
-			echo Done.
 			SHELL
 		vm1.vm.provision "shell", inline: <<-SHELL
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -219,7 +219,8 @@ Vagrant.configure("2") do |config|
 		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm2.vm.hostname = "rhel-01"
-		vm2.vm.box = "ekko919/Rocky-8.x"
+		vm2.vm.box = "ROCKY-8"
+		vm2.vm.box_version = "0"
 		vm2.vm.synced_folder ".", "/vagrant", disabled: true
 		vm2.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -258,6 +259,7 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm2.vm.provision "shell", inline: $if_schema
 		vm2.vm.provision "shell", inline: $vsl_hosts
 		vm2.vm.provision "shell", inline: <<-SHELL
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -290,7 +292,8 @@ Vagrant.configure("2") do |config|
 		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm3.vm.hostname = "rhel-02"
-		vm3.vm.box = "ekko919/Rocky-8.x"
+		vm3.vm.box = "ROCKY-9"
+		vm3.vm.box_version = "0"
 		vm3.vm.synced_folder ".", "/vagrant", disabled: true
 		vm3.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -329,6 +332,7 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm3.vm.provision "shell", inline: $if_schema
 		vm3.vm.provision "shell", inline: $vsl_hosts
 		vm3.vm.provision "shell", inline: <<-SHELL
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -361,7 +365,8 @@ Vagrant.configure("2") do |config|
 		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm4.vm.hostname = "oracle-01"
-		vm4.vm.box = "ekko919/Oracle-8.x"
+		vm4.vm.box = "ORACLE-8"
+		vm4.vm.box_version = "0"
 		vm4.vm.synced_folder ".", "/vagrant", disabled: true
 		vm4.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -400,6 +405,7 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm4.vm.provision "shell", inline: $if_schema
 		vm4.vm.provision "shell", inline: $vsl_hosts
 		vm4.vm.provision "shell", inline: <<-SHELL
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -471,6 +477,7 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm5.vm.provision "shell", inline: $if_schema
 		vm5.vm.provision "shell", inline: $vsl_hosts
 		vm5.vm.provision "shell", inline: <<-SHELL
 			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -503,7 +510,8 @@ Vagrant.configure("2") do |config|
 		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm6.vm.hostname = "debian-01"
-		vm6.vm.box = "ekko919/Debian-12.x"
+		vm6.vm.box = "DEBIAN-11"
+		vm6.vm.box_version = "0"
 		vm6.vm.synced_folder ".", "/vagrant", disabled: true
 		vm6.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -577,7 +585,8 @@ Vagrant.configure("2") do |config|
 		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm7.vm.hostname = "debian-02"
-		vm7.vm.box = "ekko919/Debian-12.x"
+		vm7.vm.box = "DEBIAN-12"
+		vm7.vm.box_version = "0"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
 		vm7.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -651,15 +660,16 @@ Vagrant.configure("2") do |config|
 		vm8.vm.network :forwarded_port, guest: 80, host: 8018, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm8.vm.hostname = "suse-01"
-		vm8.vm.box = "bento/opensuse-leap-15"
-		vm8.vm.box_version = "202508.03.0"
+		vm8.vm.box = "ekko919/SUSE-15.x"
+		vm8.vm.box_version = "2026.03.18"
 		vm8.vm.synced_folder ".", "/vagrant", disabled: true
 		vm8.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm8.vm.network "private_network",
 						ip: "172.16.100.18",
-						name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+						name: "vboxnet1",                                 # macOS/Linux Naming Schema
+#						name: "VirtualBox Host-Only Ethernet Adapter#2",  # Windows Network Naming Schema
+						auto_config: false
 		vm8.vm.provider "virtualbox" do |vb|
 			vb.name = "openSUSE Linux (Client AG18)"
 			vb.gui = false
@@ -692,8 +702,8 @@ Vagrant.configure("2") do |config|
 						]
 			end
 		vm8.vm.provision "shell", inline: <<-SHELL
-			zypper -n up
-			zypper -n in kernel-default-devel kernel-devel
+			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.18/24 gw4 172.16.100.1 autoconnect yes
+			nmcli connection up eth1
 			SHELL
 		vm8.vm.provision "shell", inline: $vsl_hosts
 		vm8.vm.provision "shell", inline: <<-SHELL
@@ -893,12 +903,9 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm99.vm.hostname = "pvu-99.vsl.lab"
 		vm99.vm.box = "ekko919/Rocky-8.x"
-		vm99.vm.box_version = "2023.07.08"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
-		# Rocky Linux Guest Additions Failure to load...
-		# Run as root: yum install elfutils-libelf-devel -y
 		vm99.vm.network "private_network",
 						ip: "172.16.100.99",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
@@ -935,6 +942,8 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		# Rocky Linux Guest Additions Failure to load...
+		# Run as root: yum install elfutils-libelf-devel -y
 		vm99.vm.provision "shell", inline: $vsl_hosts
 		vm99.vm.provision "shell", inline: <<-SHELL
 			yum install -y wget nano bind-utils
