@@ -517,8 +517,9 @@ Vagrant.configure("2") do |config|
 			owner: "vagrant", group: "vboxsf"
 		vm6.vm.network "private_network",
 						ip: "172.16.100.16",
-						name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+						name: "vboxnet1",                                 # macOS/Linux Naming Schema
+#						name: "VirtualBox Host-Only Ethernet Adapter#2",  # Windows Network Naming Schema
+						auto_config: false
 		vm6.vm.provider "virtualbox" do |vb|
 			vb.name = "Debian Linux (Client AG16)"
 			vb.gui = false
@@ -550,6 +551,11 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm6.vm.provision "shell", inline: <<-SHELL
+			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.16/24 gw4 172.16.100.1 autoconnect yes
+			nmcli connection up eth1
+			nmcli con delete "Wired connection 1" 2>/dev/null || true
+			SHELL
 		vm6.vm.provision "shell", inline: <<-SHELL
 			apt update
 			apt install -y linux-headers-generic dkms
@@ -592,8 +598,9 @@ Vagrant.configure("2") do |config|
 			owner: "vagrant", group: "vboxsf"
 		vm7.vm.network "private_network",
 						ip: "172.16.100.17",
-						name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+						name: "vboxnet1",                                 # macOS/Linux Naming Schema
+#						name: "VirtualBox Host-Only Ethernet Adapter#2",  # Windows Network Naming Schema
+						auto_config: false
 		vm7.vm.provider "virtualbox" do |vb|
 			vb.name = "Debian Linux (Client AG17)"
 			vb.gui = false
@@ -625,6 +632,11 @@ Vagrant.configure("2") do |config|
 						"--nicpromisc2", "allow-all"
 						]
 			end
+		vm7.vm.provision "shell", inline: <<-SHELL
+			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.17/24 gw4 172.16.100.1 autoconnect yes
+			nmcli connection up eth1
+			nmcli con delete "Wired connection 1" 2>/dev/null || true
+			SHELL
 		vm7.vm.provision "shell", inline: <<-SHELL
 			apt update
 			apt install -y linux-headers-generic dkms
