@@ -1,3 +1,0 @@
-Bringing machine 'oracle-01' up with 'virtualbox' provider...
-==> oracle-01: Machine already provisioned. Run `vagrant provision` or use the `--provision`
-==> oracle-01: flag to force provisioning. Provisioners marked to run always will still run.

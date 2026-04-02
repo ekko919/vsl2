@@ -1,7 +1,5 @@
 /.DS_Store
 /.vagrant
-/env/dev
-/tmp/scripts/wip
 .vscode
 *.iso
 CLAUDE.md
