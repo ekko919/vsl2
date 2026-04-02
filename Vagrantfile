@@ -673,7 +673,7 @@ Vagrant.configure("2") do |config|
 		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm8.vm.hostname = "suse-01"
 		vm8.vm.box = "ekko919/SUSE-15.x"
-		vm8.vm.box_version = "2026.03.18"
+		vm8.vm.box_version = "2026.04.02"
 		vm8.vm.synced_folder ".", "/vagrant", disabled: true
 		vm8.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -685,7 +685,7 @@ Vagrant.configure("2") do |config|
 		vm8.vm.provider "virtualbox" do |vb|
 			vb.name = "openSUSE Linux (Client AG18)"
 			vb.gui = false
-			vb.memory = "1024"
+			vb.memory = "2048"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
 						"--vram",
@@ -749,19 +749,20 @@ Vagrant.configure("2") do |config|
 		vm9.vm.network :forwarded_port, guest: 80, host: 8019, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm9.vm.network :forwarded_port, guest: 443, host: 19443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm9.vm.hostname = "suse-02"
-		vm9.vm.box = "bento/opensuse-leap-15"
-		vm9.vm.box_version = "202508.03.0"
+		vm9.vm.box = "ekko919/SUSE-15.x"
+		vm9.vm.box_version = "2026.04.02"
 		vm9.vm.synced_folder ".", "/vagrant", disabled: true
 		vm9.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
 		vm9.vm.network "private_network",
 						ip: "172.16.100.19",
-						name: "vboxnet1"                                  # macOS/Linux Naming Schema
-#						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
+						name: "vboxnet1",                                 # macOS/Linux Naming Schema
+#						name: "VirtualBox Host-Only Ethernet Adapter#2",  # Windows Network Naming Schema
+						auto_config: false
 		vm9.vm.provider "virtualbox" do |vb|
 			vb.name = "openSUSE Linux (Client AG19)"
 			vb.gui = false
-			vb.memory = "1024"
+			vb.memory = "2048"
 			vb.cpus = 1
 			vb.customize ["modifyvm", :id,
 						"--vram",
@@ -790,12 +791,12 @@ Vagrant.configure("2") do |config|
 						]
 			end
 		vm9.vm.provision "shell", inline: <<-SHELL
-			zypper -n up
-			zypper -n in kernel-default-devel kernel-devel
+			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.19/24 gw4 172.16.100.1 autoconnect yes
+			nmcli connection up eth1
 			SHELL
 		vm9.vm.provision "shell", inline: $vsl_hosts
 		vm9.vm.provision "shell", inline: <<-SHELL
-			zypper -n in wget nano bind-utils
+			zypper in -y wget nano bind-utils
 			SHELL
 		vm9.vm.provision "shell", inline: <<-SHELL
 			zypper in -y dnsmasq
