@@ -139,8 +139,8 @@ Vagrant.configure("2") do |config|
 		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm1.vm.hostname = "otto-svr"
-		vm1.vm.box = "ALMA-8"
-		vm1.vm.box_version = "0"
+		vm1.vm.box = "ekko919/Alma-8.x"
+		vm1.vm.box_version = "2026.04.02"
 		vm1.vm.synced_folder ".", "/vagrant", disabled: true
 		vm1.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -219,8 +219,8 @@ Vagrant.configure("2") do |config|
 		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm2.vm.hostname = "rhel-01"
-		vm2.vm.box = "ROCKY-8"
-		vm2.vm.box_version = "0"
+		vm2.vm.box = "ekko919/Rocky-8.x"
+		vm2.vm.box_version = "2026.04.02"
 		vm2.vm.synced_folder ".", "/vagrant", disabled: true
 		vm2.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -292,8 +292,8 @@ Vagrant.configure("2") do |config|
 		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm3.vm.hostname = "rhel-02"
-		vm3.vm.box = "ROCKY-9"
-		vm3.vm.box_version = "0"
+		vm3.vm.box = "ekko919/Rocky-9.x"
+		vm3.vm.box_version = "2026.04.02"
 		vm3.vm.synced_folder ".", "/vagrant", disabled: true
 		vm3.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -365,8 +365,8 @@ Vagrant.configure("2") do |config|
 		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm4.vm.hostname = "oracle-01"
-		vm4.vm.box = "ORACLE-8"
-		vm4.vm.box_version = "0"
+		vm4.vm.box = "ekko919/Oracle-8.x"
+		vm4.vm.box_version = "2026.04.02"
 		vm4.vm.synced_folder ".", "/vagrant", disabled: true
 		vm4.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -510,8 +510,8 @@ Vagrant.configure("2") do |config|
 		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm6.vm.hostname = "debian-01"
-		vm6.vm.box = "DEBIAN-11"
-		vm6.vm.box_version = "0"
+		vm6.vm.box = "ekko919/Debian-11.x"
+		vm6.vm.box_version = "2026.04.02"
 		vm6.vm.synced_folder ".", "/vagrant", disabled: true
 		vm6.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -591,8 +591,8 @@ Vagrant.configure("2") do |config|
 		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm7.vm.hostname = "debian-02"
-		vm7.vm.box = "DEBIAN-12"
-		vm7.vm.box_version = "0"
+		vm7.vm.box = "ekko919/Debian-12.x"
+		vm7.vm.box_version = "2026.04.02"
 		vm7.vm.synced_folder ".", "/vagrant", disabled: true
 		vm7.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -673,7 +673,7 @@ Vagrant.configure("2") do |config|
 		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm8.vm.hostname = "suse-01"
 		vm8.vm.box = "ekko919/SUSE-15.x"
-		vm8.vm.box_version = "2026.04.02"
+		vm8.vm.box_version = "2026.04.03"
 		vm8.vm.synced_folder ".", "/vagrant", disabled: true
 		vm8.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -750,7 +750,7 @@ Vagrant.configure("2") do |config|
 		vm9.vm.network :forwarded_port, guest: 443, host: 19443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm9.vm.hostname = "suse-02"
 		vm9.vm.box = "ekko919/SUSE-15.x"
-		vm9.vm.box_version = "2026.04.02"
+		vm9.vm.box_version = "2026.04.03"
 		vm9.vm.synced_folder ".", "/vagrant", disabled: true
 		vm9.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
@@ -915,7 +915,7 @@ Vagrant.configure("2") do |config|
 		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
 		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm99.vm.hostname = "pvu-99.vsl.lab"
-		vm99.vm.box = "ekko919/Rocky-8.x"
+		vm99.vm.box = "ekko919/Rocky-9.x"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
