@@ -186,8 +186,9 @@ vagrant up otto-svr
 ```
 
 > **Clone path note:** Clone into a path with no spaces — `~/projects/vsl2` is
-> recommended on both macOS and Linux. Paths containing spaces can cause issues
-> with bare shell operations inside the project directory.
+> recommended on macOS, Linux, and Windows (Git Bash). On Windows this resolves
+> to `C:\Users\<username>\projects\vsl2`. Paths containing spaces can cause
+> issues with bare shell operations inside the project directory.
 
 ---
 
