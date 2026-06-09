@@ -123,6 +123,46 @@ Expected local boxes:
 
 ---
 
+## SSH Key Convention
+
+The `keys/.ssh/` directory contains a shared key pair (`vagrant.key` / `vagrant.pub`)
+committed intentionally to the repository. This follows the same convention as
+Vagrant's built-in insecure key — it is not a security credential, it is a known
+lab key that allows Vagrant to SSH into freshly provisioned VMs before any
+org-specific access is configured.
+
+The `vagrant.pub` key is written to `~/.ssh/authorized_keys` on each VM during
+provisioning, replacing the default Vagrant insecure key. All VMs in the environment
+share this key pair.
+
+**These VMs are only reachable from the local machine** (host-only adapter +
+localhost-bound forwarded ports). Do not use this key pair on any externally
+accessible system.
+
+---
+
+## Local Customization
+
+Two values in the `Vagrantfile` are site-specific and should be reviewed before
+first use:
+
+**Timezone** — All VMs are provisioned with `America/New_York`. To change it,
+update the `timedatectl set-timezone` line in the `$ntp_svc` script block near
+the top of the `Vagrantfile`:
+
+```ruby
+timedatectl set-timezone America/New_York
+```
+
+Replace with any valid `timedatectl` timezone string (e.g., `America/Chicago`,
+`Europe/London`). Run `timedatectl list-timezones` to see all options.
+
+**Host-only adapter name** — The private network adapter is set to `vboxnet1`
+throughout the `Vagrantfile`. On Windows the name will differ — each VM block
+has the Windows equivalent commented out directly above or below the active line.
+
+---
+
 ## Clone and Run
 
 Clone into the following path — the directory structure is expected by the environment:
