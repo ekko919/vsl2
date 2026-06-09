@@ -10,10 +10,11 @@
 172.16.100.13   rhel-02.vsl.lab             rhel-02
 172.16.100.14   oracle-01.vsl.lab           oracle-01
 172.16.100.15   oracle-02.vsl.lab           oracle-02
-172.16.100.16   ubuntu-01.vsl.lab           ubuntu-01
-172.16.100.17   ubuntu-02.vsl.lab           ubuntu-02
+172.16.100.16   debian-01.vsl.lab           debian-01
+172.16.100.17   debian-02.vsl.lab           debian-02
 172.16.100.18   suse-01.vsl.lab             suse-01
 172.16.100.19   suse-02.vsl.lab             suse-02
+172.16.100.98   pvu-98.vsl.lab              pvu-98
 172.16.100.99   pvu-99.vsl.lab              pvu-99
 
 ### vagrant-hostmanager-end ###

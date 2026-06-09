@@ -335,7 +335,7 @@ Vagrant.configure("2") do |config|
 		vm3.vm.provision "shell", inline: $if_schema
 		vm3.vm.provision "shell", inline: $vsl_hosts
 		vm3.vm.provision "shell", inline: <<-SHELL
-			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+			yum -y install http://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 			yum -y install nano gcc make perl kernel-devel
 			yum -y install bind-utils
 			systemctl set-default multi-user.target
@@ -439,6 +439,7 @@ Vagrant.configure("2") do |config|
 		vm5.vm.network :forwarded_port, guest: 443, host: 15443, host_ip: "0.0.0.0", id: "https", auto_correct: true
 		vm5.vm.hostname = "oracle-02"
 		vm5.vm.box = "ekko919/Oracle-8.x"
+		vm5.vm.box_version = "2026.04.02"
 		vm5.vm.synced_folder ".", "/vagrant", disabled: true
 		vm5.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"

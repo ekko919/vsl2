@@ -19,7 +19,7 @@ Hosts 11 VMs across multiple Linux distributions for IaaS development and testin
 | suse-01    | ekko919/SUSE-15.x      | openSUSE 15    | 172.16.100.18   | 2218  | 8018  | 18443  |
 | suse-02    | ekko919/SUSE-15.x      | openSUSE 15    | 172.16.100.19   | 2219  | 8019  | 19443  |
 | pvu-98     | ekko919/Debian-12.x    | Debian 12      | 172.16.100.98   | 2298  | 8098  | 9843   |
-| pvu-99     | ekko919/Rocky-8.x      | Rocky Linux 8  | 172.16.100.99   | 2299  | 8099  | 9943   |
+| pvu-99     | ekko919/Rocky-9.x      | Rocky Linux 9  | 172.16.100.99   | 2299  | 8099  | 9943   |
 
 ---
 
