@@ -6,13 +6,22 @@
 
 set -uo pipefail
 
+# ── Expected Versions ─────────────────────────────────────────────────────────
+# This environment was built and validated against these specific versions.
+# Other versions may work but have not been tested.
+
+EXP_VBX="7.1"           # VirtualBox major.minor
+EXP_VGR="2.4"           # Vagrant major.minor
+EXP_HM="1.8.10"         # vagrant-hostmanager
+EXP_VBG="0.32.0"        # vagrant-vbguest
+
 # ── OS Detection ──────────────────────────────────────────────────────────────
 
 case "$(uname -s)" in
-    Darwin)         OS_TYPE="macos"   ;;
-    Linux)          OS_TYPE="linux"   ;;
+    Darwin)               OS_TYPE="macos"   ;;
+    Linux)                OS_TYPE="linux"   ;;
     MINGW*|MSYS*|CYGWIN*) OS_TYPE="windows" ;;
-    *)              OS_TYPE="unknown" ;;
+    *)                    OS_TYPE="unknown" ;;
 esac
 
 # ── Formatting ────────────────────────────────────────────────────────────────
@@ -36,6 +45,9 @@ section() { echo -e "\n${BLD}${CYN}── $1 ${RST}"; }
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 cmd_exists() { command -v "$1" &>/dev/null; }
+
+# Returns major.minor from a version string (e.g. "7.1.10" -> "7.1")
+major_minor() { echo "$1" | cut -d. -f1,2; }
 
 port_in_use() {
     local port="$1"
@@ -61,25 +73,26 @@ port_in_use() {
 # ── Header ────────────────────────────────────────────────────────────────────
 
 echo -e "${BLD}vsl2 — Environment Pre-flight Check${RST}"
-echo -e "Platform: $OS_TYPE"
+echo -e "Platform : $OS_TYPE"
+echo -e "Expected : VirtualBox $EXP_VBX.x  |  Vagrant $EXP_VGR.x  |  vagrant-hostmanager $EXP_HM  |  vagrant-vbguest $EXP_VBG"
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
 section "Tools"
 
 # VirtualBox
+VBX_FOUND=0
 if cmd_exists VBoxManage; then
     VBX_VER=$(VBoxManage --version 2>/dev/null | sed 's/r.*//')
-    VBX_MAJ=$(echo "$VBX_VER" | cut -d. -f1)
-    if [[ "$VBX_MAJ" == "7" ]]; then
+    VBX_MM=$(major_minor "$VBX_VER")
+    if [[ "$VBX_MM" == "$EXP_VBX" ]]; then
         pass "VirtualBox $VBX_VER"
     else
-        warn "VirtualBox $VBX_VER (expected 7.1.x)"
+        warn "VirtualBox $VBX_VER — expected $EXP_VBX.x — other versions may work but are untested"
     fi
     VBX_FOUND=1
 else
-    fail "VirtualBox not found — install from https://virtualbox.org"
-    VBX_FOUND=0
+    fail "VirtualBox not found — install $EXP_VBX.x from https://virtualbox.org"
 fi
 
 # Extension Pack
@@ -87,47 +100,57 @@ if [[ $VBX_FOUND -eq 1 ]]; then
     EXT_INFO=$(VBoxManage list extpacks 2>/dev/null)
     if echo "$EXT_INFO" | grep -q "Oracle VirtualBox Extension Pack"; then
         EXT_VER=$(echo "$EXT_INFO" | grep "^Version:" | awk '{print $2}' | head -1)
-        if [[ "${EXT_VER%%r*}" == "${VBX_VER%%r*}" ]]; then
+        EXT_MM=$(major_minor "${EXT_VER%%r*}")
+        VBX_MM_CLEAN=$(major_minor "${VBX_VER%%r*}")
+        if [[ "$EXT_MM" == "$VBX_MM_CLEAN" ]]; then
             pass "Extension Pack $EXT_VER (matches VirtualBox)"
         else
-            warn "Extension Pack $EXT_VER does not match VirtualBox $VBX_VER — versions must match"
+            warn "Extension Pack $EXT_VER does not match VirtualBox $VBX_VER — versions must match exactly"
         fi
     else
-        fail "VirtualBox Extension Pack not installed"
+        fail "VirtualBox Extension Pack not installed — must match VirtualBox $VBX_VER exactly"
     fi
 fi
 
 # Vagrant
+VGR_FOUND=0
 if cmd_exists vagrant; then
     VGR_VER=$(vagrant --version 2>/dev/null | awk '{print $2}')
-    VGR_MAJ=$(echo "$VGR_VER" | cut -d. -f1)
-    VGR_MIN=$(echo "$VGR_VER" | cut -d. -f2)
-    if [[ "$VGR_MAJ" == "2" && "$VGR_MIN" == "4" ]]; then
+    VGR_MM=$(major_minor "$VGR_VER")
+    if [[ "$VGR_MM" == "$EXP_VGR" ]]; then
         pass "Vagrant $VGR_VER"
     else
-        warn "Vagrant $VGR_VER (expected 2.4.x)"
+        warn "Vagrant $VGR_VER — expected $EXP_VGR.x — other versions may work but are untested"
     fi
     VGR_FOUND=1
 else
-    fail "Vagrant not found — install from https://developer.hashicorp.com/vagrant/install"
-    VGR_FOUND=0
+    fail "Vagrant not found — install $EXP_VGR.x from https://developer.hashicorp.com/vagrant/install"
 fi
 
 # Vagrant plugins
 if [[ $VGR_FOUND -eq 1 ]]; then
     PLUGINS=$(vagrant plugin list 2>/dev/null)
+
     if echo "$PLUGINS" | grep -q "vagrant-hostmanager"; then
         HM_VER=$(echo "$PLUGINS" | grep "vagrant-hostmanager" | awk '{print $2}' | tr -d '(),')
-        pass "vagrant-hostmanager $HM_VER"
+        if [[ "$HM_VER" == "$EXP_HM" ]]; then
+            pass "vagrant-hostmanager $HM_VER"
+        else
+            warn "vagrant-hostmanager $HM_VER — expected $EXP_HM — other versions may work but are untested"
+        fi
     else
-        fail "vagrant-hostmanager not installed — run: vagrant plugin install vagrant-hostmanager"
+        fail "vagrant-hostmanager not installed — run: vagrant plugin install vagrant-hostmanager --plugin-version $EXP_HM"
     fi
 
     if echo "$PLUGINS" | grep -q "vagrant-vbguest"; then
         VBG_VER=$(echo "$PLUGINS" | grep "vagrant-vbguest" | awk '{print $2}' | tr -d '(),')
-        pass "vagrant-vbguest $VBG_VER"
+        if [[ "$VBG_VER" == "$EXP_VBG" ]]; then
+            pass "vagrant-vbguest $VBG_VER"
+        else
+            warn "vagrant-vbguest $VBG_VER — expected $EXP_VBG — other versions may work but are untested"
+        fi
     else
-        fail "vagrant-vbguest not installed — run: vagrant plugin install vagrant-vbguest"
+        fail "vagrant-vbguest not installed — run: vagrant plugin install vagrant-vbguest --plugin-version $EXP_VBG"
     fi
 fi
 
@@ -159,7 +182,6 @@ if [[ $VBX_FOUND -eq 1 ]]; then
             ADAPTER_LABEL="vboxnet1"
             ;;
         windows)
-            # Windows names host-only adapters as "VirtualBox Host-Only Ethernet Adapter #2"
             ADAPTER_NAME="VirtualBox Host-Only Ethernet Adapter #2"
             ADAPTER_LABEL="VirtualBox Host-Only Ethernet Adapter #2"
             ;;

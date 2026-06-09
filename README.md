@@ -58,15 +58,19 @@ brew install --cask virtualbox virtualbox-extension-pack vagrant
 
 ### Vagrant Plugins
 
+Install pinned versions to match the tested configuration:
+
 ```bash
-vagrant plugin install vagrant-hostmanager
-vagrant plugin install vagrant-vbguest
+vagrant plugin install vagrant-hostmanager --plugin-version 1.8.10
+vagrant plugin install vagrant-vbguest --plugin-version 0.32.0
 ```
 
-| Plugin | Purpose |
-|--------|---------|
-| `vagrant-hostmanager` | Manages `/etc/hosts` entries across VMs |
-| `vagrant-vbguest` | Manages VirtualBox Guest Additions on VMs |
+| Plugin | Version | Purpose |
+|--------|---------|---------|
+| `vagrant-hostmanager` | 1.8.10 | Manages `/etc/hosts` entries across VMs |
+| `vagrant-vbguest` | 0.32.0 | Manages VirtualBox Guest Additions on VMs |
+
+Other versions may work but have not been tested against this environment.
 
 ---
 
