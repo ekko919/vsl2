@@ -185,11 +185,10 @@ vagrant up
 vagrant up otto-svr
 ```
 
-> **Clone path note:** The Vagrantfile expects to be cloned into a path with no
-> spaces in its parent directories on Linux/macOS. The default
-> `~/My Documents/VM_Share/Projects/IaaS/vsl2` works on macOS because Vagrant
-> handles the space internally, but bare shell operations in that directory may
-> require quoting.
+> **Clone path note:** On Linux, clone into a path with no spaces — `~/projects/vsl2`
+> is recommended. On macOS the default path (`~/My Documents/VM_Share/Projects/IaaS/vsl2`)
+> works because Vagrant handles the space internally, but bare shell operations in
+> that directory may require quoting.
 
 ---
 
