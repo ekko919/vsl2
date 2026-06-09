@@ -12,6 +12,7 @@ Hosts 11 VMs across multiple Linux distributions for IaaS development and testin
 - [Host Configuration](#host-configuration)
 - [Vagrant Boxes](#vagrant-boxes)
 - [Local Customization](#local-customization)
+- [Pre-flight Check](#quick-start)
 - [Quick Start](#quick-start)
 - [Common Commands](#common-commands)
 - [SSH Key Convention](#ssh-key-convention)
@@ -161,8 +162,16 @@ alongside the active line in each VM block.
 
 ## Quick Start
 
-After completing [Host Configuration](#host-configuration) and verifying
-[Vagrant Boxes](#vagrant-boxes):
+Run the pre-flight check first to verify all prerequisites and host configuration:
+
+```bash
+./check.sh
+```
+
+This checks VirtualBox, Vagrant, plugins, host-only adapter, NAT network, local boxes,
+and port availability — and tells you exactly what needs to be fixed before `vagrant up`.
+
+After all checks pass:
 
 ```bash
 git clone https://github.com/ekko919/vsl2.git
