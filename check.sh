@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 # check.sh — Pre-flight check for the vsl2 Vagrant environment.
 # Verifies tools, host configuration, local boxes, and port availability.
+# Supports macOS, Linux, and Windows (Git Bash).
 # Usage: ./check.sh
 
 set -uo pipefail
+
+# ── OS Detection ──────────────────────────────────────────────────────────────
+
+case "$(uname -s)" in
+    Darwin)         OS_TYPE="macos"   ;;
+    Linux)          OS_TYPE="linux"   ;;
+    MINGW*|MSYS*|CYGWIN*) OS_TYPE="windows" ;;
+    *)              OS_TYPE="unknown" ;;
+esac
 
 # ── Formatting ────────────────────────────────────────────────────────────────
 
@@ -18,9 +28,9 @@ PASS=0
 WARN=0
 FAIL=0
 
-pass() { echo -e "  ${GRN}[PASS]${RST} $1"; PASS=$((PASS + 1)); }
-warn() { echo -e "  ${YEL}[WARN]${RST} $1"; WARN=$((WARN + 1)); }
-fail() { echo -e "  ${RED}[FAIL]${RST} $1"; FAIL=$((FAIL + 1)); }
+pass()    { echo -e "  ${GRN}[PASS]${RST} $1"; PASS=$((PASS + 1)); }
+warn()    { echo -e "  ${YEL}[WARN]${RST} $1"; WARN=$((WARN + 1)); }
+fail()    { echo -e "  ${RED}[FAIL]${RST} $1"; FAIL=$((FAIL + 1)); }
 section() { echo -e "\n${BLD}${CYN}── $1 ${RST}"; }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -28,8 +38,30 @@ section() { echo -e "\n${BLD}${CYN}── $1 ${RST}"; }
 cmd_exists() { command -v "$1" &>/dev/null; }
 
 port_in_use() {
-    lsof -iTCP:"$1" -sTCP:LISTEN -n -P 2>/dev/null | grep -q "127.0.0.1:$1"
+    local port="$1"
+    case "$OS_TYPE" in
+        macos)
+            lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep -q "127.0.0.1:$port"
+            ;;
+        linux)
+            if cmd_exists lsof; then
+                lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep -q "127.0.0.1:$port"
+            elif cmd_exists ss; then
+                ss -tlnp 2>/dev/null | grep -q "127.0.0.1:$port"
+            else
+                netstat -tlnp 2>/dev/null | grep -q "127.0.0.1:$port"
+            fi
+            ;;
+        windows)
+            netstat -an 2>/dev/null | grep -q "127.0.0.1:$port"
+            ;;
+    esac
 }
+
+# ── Header ────────────────────────────────────────────────────────────────────
+
+echo -e "${BLD}vsl2 — Environment Pre-flight Check${RST}"
+echo -e "Platform: $OS_TYPE"
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
@@ -44,12 +76,14 @@ if cmd_exists VBoxManage; then
     else
         warn "VirtualBox $VBX_VER (expected 7.1.x)"
     fi
+    VBX_FOUND=1
 else
     fail "VirtualBox not found — install from https://virtualbox.org"
+    VBX_FOUND=0
 fi
 
 # Extension Pack
-if cmd_exists VBoxManage; then
+if [[ $VBX_FOUND -eq 1 ]]; then
     EXT_INFO=$(VBoxManage list extpacks 2>/dev/null)
     if echo "$EXT_INFO" | grep -q "Oracle VirtualBox Extension Pack"; then
         EXT_VER=$(echo "$EXT_INFO" | grep "^Version:" | awk '{print $2}' | head -1)
@@ -73,12 +107,14 @@ if cmd_exists vagrant; then
     else
         warn "Vagrant $VGR_VER (expected 2.4.x)"
     fi
+    VGR_FOUND=1
 else
     fail "Vagrant not found — install from https://developer.hashicorp.com/vagrant/install"
+    VGR_FOUND=0
 fi
 
 # Vagrant plugins
-if cmd_exists vagrant; then
+if [[ $VGR_FOUND -eq 1 ]]; then
     PLUGINS=$(vagrant plugin list 2>/dev/null)
     if echo "$PLUGINS" | grep -q "vagrant-hostmanager"; then
         HM_VER=$(echo "$PLUGINS" | grep "vagrant-hostmanager" | awk '{print $2}' | tr -d '(),')
@@ -99,35 +135,50 @@ fi
 
 section "Host Configuration"
 
-# /etc/vbox/networks.conf
-NETS_CONF="/etc/vbox/networks.conf"
-if [[ -f "$NETS_CONF" ]]; then
-    if grep -q "0\.0\.0\.0/0" "$NETS_CONF"; then
-        pass "$NETS_CONF — unrestricted host-only ranges allowed"
-    else
-        warn "$NETS_CONF exists but does not contain '0.0.0.0/0' — VirtualBox may block the 172.16.100.0/24 range"
-    fi
-else
-    fail "$NETS_CONF not found — create it with: echo '* 0.0.0.0/0 ::/0' | sudo tee $NETS_CONF"
-fi
-
-# vboxnet1 adapter
-if cmd_exists VBoxManage; then
-    HO_INFO=$(VBoxManage list hostonlyifs 2>/dev/null)
-    if echo "$HO_INFO" | grep -q "vboxnet1"; then
-        VNET1_IP=$(echo "$HO_INFO" | awk '/Name:.*vboxnet1/{found=1} found && /IPAddress:/{print $2; exit}')
-        if [[ "$VNET1_IP" == "172.16.100.1" ]]; then
-            pass "vboxnet1 — IP $VNET1_IP"
+# /etc/vbox/networks.conf (macOS and Linux only — not used on Windows)
+if [[ "$OS_TYPE" != "windows" ]]; then
+    NETS_CONF="/etc/vbox/networks.conf"
+    if [[ -f "$NETS_CONF" ]]; then
+        if grep -q "0\.0\.0\.0/0" "$NETS_CONF"; then
+            pass "$NETS_CONF — unrestricted host-only ranges allowed"
         else
-            warn "vboxnet1 found but IP is $VNET1_IP (expected 172.16.100.1)"
+            warn "$NETS_CONF exists but does not contain '0.0.0.0/0' — VirtualBox may block the 172.16.100.0/24 range"
         fi
     else
-        fail "vboxnet1 not found — create it in VirtualBox: File → Host Network Manager"
+        fail "$NETS_CONF not found — create it with: echo '* 0.0.0.0/0 ::/0' | sudo tee $NETS_CONF"
+    fi
+fi
+
+# Host-only adapter — name differs by OS
+if [[ $VBX_FOUND -eq 1 ]]; then
+    HO_INFO=$(VBoxManage list hostonlyifs 2>/dev/null)
+
+    case "$OS_TYPE" in
+        macos|linux)
+            ADAPTER_NAME="vboxnet1"
+            ADAPTER_LABEL="vboxnet1"
+            ;;
+        windows)
+            # Windows names host-only adapters as "VirtualBox Host-Only Ethernet Adapter #2"
+            ADAPTER_NAME="VirtualBox Host-Only Ethernet Adapter #2"
+            ADAPTER_LABEL="VirtualBox Host-Only Ethernet Adapter #2"
+            ;;
+    esac
+
+    if echo "$HO_INFO" | grep -q "Name:.*${ADAPTER_NAME}"; then
+        HO_IP=$(echo "$HO_INFO" | awk "/Name:.*${ADAPTER_NAME}/{found=1} found && /IPAddress:/{print \$2; exit}")
+        if [[ "$HO_IP" == "172.16.100.1" ]]; then
+            pass "$ADAPTER_LABEL — IP $HO_IP"
+        else
+            warn "$ADAPTER_LABEL found but IP is $HO_IP (expected 172.16.100.1)"
+        fi
+    else
+        fail "$ADAPTER_LABEL not found — create it in VirtualBox: File → Host Network Manager"
     fi
 fi
 
 # VSL_Network NAT network
-if cmd_exists VBoxManage; then
+if [[ $VBX_FOUND -eq 1 ]]; then
     if VBoxManage list natnetworks 2>/dev/null | grep -q "VSL_Network"; then
         pass "VSL_Network NAT network exists"
     else
@@ -139,7 +190,7 @@ fi
 
 section "Local Vagrant Boxes"
 
-if cmd_exists vagrant; then
+if [[ $VGR_FOUND -eq 1 ]]; then
     BOX_LIST=$(vagrant box list 2>/dev/null)
     for BOX in ALMA-8 ROCKY-8 ROCKY-9 ORACLE-8 DEBIAN-11 DEBIAN-12; do
         if echo "$BOX_LIST" | grep -q "^$BOX "; then
