@@ -53,19 +53,19 @@ port_in_use() {
     local port="$1"
     case "$OS_TYPE" in
         macos)
-            lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep -q "127.0.0.1:$port"
+            lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep "127.0.0.1:$port" > /dev/null
             ;;
         linux)
             if cmd_exists lsof; then
-                lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep -q "127.0.0.1:$port"
+                lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null | grep "127.0.0.1:$port" > /dev/null
             elif cmd_exists ss; then
-                ss -tlnp 2>/dev/null | grep -q "127.0.0.1:$port"
+                ss -tlnp 2>/dev/null | grep "127.0.0.1:$port" > /dev/null
             else
-                netstat -tlnp 2>/dev/null | grep -q "127.0.0.1:$port"
+                netstat -tlnp 2>/dev/null | grep "127.0.0.1:$port" > /dev/null
             fi
             ;;
         windows)
-            netstat -an 2>/dev/null | grep -q "127.0.0.1:$port"
+            netstat -an 2>/dev/null | grep "127.0.0.1:$port" > /dev/null
             ;;
     esac
 }
@@ -103,7 +103,7 @@ if cmd_exists VBoxManage; then
     VBX_FOUND=1
     # Verify kernel modules compiled and loaded (Linux only)
     if [[ "$OS_TYPE" == "linux" ]]; then
-        if lsmod 2>/dev/null | grep -q vboxdrv; then
+        if lsmod 2>/dev/null | grep vboxdrv > /dev/null; then
             pass "VirtualBox kernel modules loaded"
         else
             fail "VirtualBox kernel modules not loaded — run: sudo /sbin/vboxconfig"
@@ -225,7 +225,7 @@ fi
 
 # VSL_Network NAT network
 if [[ $VBX_FOUND -eq 1 ]]; then
-    if VBoxManage list natnetworks 2>/dev/null | grep -q "VSL_Network"; then
+    if VBoxManage list natnetworks 2>/dev/null | grep "VSL_Network" > /dev/null; then
         pass "VSL_Network NAT network exists"
     else
         fail "VSL_Network not found — create it in VirtualBox: File → Tools → Network Manager → NAT Networks"

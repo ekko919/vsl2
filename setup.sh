@@ -88,9 +88,9 @@ ext_pack_cmds() {
             note "downloads the pack version that matches your installed VirtualBox:"
             cmd 'EXT_VER=$(VBoxManage --version | sed "s/r.*//")'
             cmd 'wget "https://download.virtualbox.org/virtualbox/${EXT_VER}/Oracle_VirtualBox_Extension_Pack-${EXT_VER}.vbox-extpack" \'
-            cmd '     -O /tmp/extpack.vbox-extpack'
-            cmd 'sudo VBoxManage extpack install --replace /tmp/extpack.vbox-extpack'
-            cmd 'rm /tmp/extpack.vbox-extpack'
+            cmd '     -O "/tmp/Oracle_VirtualBox_Extension_Pack-${EXT_VER}.vbox-extpack"'
+            cmd 'sudo VBoxManage extpack install --replace "/tmp/Oracle_VirtualBox_Extension_Pack-${EXT_VER}.vbox-extpack"'
+            cmd 'rm "/tmp/Oracle_VirtualBox_Extension_Pack-${EXT_VER}.vbox-extpack"'
             ;;
     esac
 }
