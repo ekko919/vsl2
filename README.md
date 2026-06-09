@@ -12,7 +12,6 @@ Hosts 11 VMs across multiple Linux distributions for IaaS development and testin
 - [Host Configuration](#host-configuration)
 - [Vagrant Boxes](#vagrant-boxes)
 - [Local Customization](#local-customization)
-- [Pre-flight Check](#quick-start)
 - [Quick Start](#quick-start)
 - [Common Commands](#common-commands)
 - [SSH Key Convention](#ssh-key-convention)
@@ -114,27 +113,8 @@ The lab VMs use a shared NAT network for outbound internet access.
 
 ## Vagrant Boxes
 
-VMs source their base images from two places:
-
-- **HCP Registry** (`ekko919/*`) — publicly available boxes pulled automatically by Vagrant
-- **Local** — boxes built with [auto.packer](https://github.com/ekko919/auto.packer) and registered locally
-
-Before bringing up the full environment, verify your local boxes are registered:
-
-```bash
-vagrant box list
-```
-
-Required local boxes:
-
-| Box Name  | Build Template              |
-|-----------|-----------------------------|
-| ALMA-8    | auto.packer `vgr-alma-8.json`   |
-| ROCKY-8   | auto.packer `vgr-rocky-8.json`  |
-| ROCKY-9   | auto.packer `vgr-rocky-9.json`  |
-| ORACLE-8  | auto.packer `vgr-oracle-8.json` |
-| DEBIAN-11 | auto.packer `vgr-deb-11.json`   |
-| DEBIAN-12 | auto.packer `vgr-deb-12.json`   |
+All VM base images are sourced from the public HCP Vagrant Registry (`ekko919/*`) and
+pulled automatically by Vagrant on first `vagrant up`. No manual box registration required.
 
 ---
 

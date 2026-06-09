@@ -214,22 +214,6 @@ if [[ $VBX_FOUND -eq 1 ]]; then
     fi
 fi
 
-# ── Local Vagrant Boxes ───────────────────────────────────────────────────────
-
-section "Local Vagrant Boxes"
-
-if [[ $VGR_FOUND -eq 1 ]]; then
-    BOX_LIST=$(vagrant box list 2>/dev/null)
-    for BOX in ALMA-8 ROCKY-8 ROCKY-9 ORACLE-8 DEBIAN-11 DEBIAN-12; do
-        if echo "$BOX_LIST" | grep -q "^$BOX "; then
-            BOX_VER=$(echo "$BOX_LIST" | grep "^$BOX " | awk -F'[()]' '{print $2}' | head -1)
-            pass "$BOX ($BOX_VER)"
-        else
-            fail "$BOX not registered — build with auto.packer and register locally"
-        fi
-    done
-fi
-
 # ── Port Availability ─────────────────────────────────────────────────────────
 
 section "Port Availability (127.0.0.1)"
