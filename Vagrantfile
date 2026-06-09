@@ -106,7 +106,7 @@ SCRIPT
 Vagrant.configure("2") do |config|
 	config.vm.box_check_update = true
 	config.vm.boot_timeout = 300
-	#SSH Key Config
+	# SSH Key Config
 	config.ssh.forward_agent = false
 	config.ssh.insert_key = false
 	config.ssh.private_key_path = ["keys/.ssh/vagrant.key", "~/.vagrant.d/insecure_private_key"]
@@ -175,7 +175,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm1.vm.provision "shell", inline: $disable_ipv6
 		vm1.vm.provision "shell", inline: 'sysctl -p'
 		vm1.vm.provision "shell", inline: $if_schema
@@ -204,7 +204,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm1.vm.provision "shell", inline: $ntp_svc
-		end
+	end
 
 #############################################
 #              RHEL Linux (01)              #
@@ -254,7 +254,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm2.vm.provision "shell", inline: $if_schema
 		vm2.vm.provision "shell", inline: $vsl_hosts
 		vm2.vm.provision "shell", inline: <<-SHELL
@@ -277,7 +277,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm2.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #              RHEL Linux (02)              #
@@ -327,7 +327,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm3.vm.provision "shell", inline: $if_schema
 		vm3.vm.provision "shell", inline: $vsl_hosts
 		vm3.vm.provision "shell", inline: <<-SHELL
@@ -350,7 +350,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm3.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #             Oracle Linux (01)             #
@@ -400,7 +400,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm4.vm.provision "shell", inline: $if_schema
 		vm4.vm.provision "shell", inline: $vsl_hosts
 		vm4.vm.provision "shell", inline: <<-SHELL
@@ -423,7 +423,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm4.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #             Oracle Linux (02)             #
@@ -473,7 +473,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm5.vm.provision "shell", inline: $if_schema
 		vm5.vm.provision "shell", inline: $vsl_hosts
 		vm5.vm.provision "shell", inline: <<-SHELL
@@ -496,7 +496,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm5.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #             Debian Linux (01)             #
@@ -547,7 +547,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm6.vm.provision "shell", inline: <<-SHELL
 			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.16/24 gw4 172.16.100.1 autoconnect yes
 			nmcli connection up eth1
@@ -577,7 +577,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm6.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #             Debian Linux (02)             #
@@ -628,7 +628,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm7.vm.provision "shell", inline: <<-SHELL
 			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.17/24 gw4 172.16.100.1 autoconnect yes
 			nmcli connection up eth1
@@ -658,7 +658,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm7.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #            openSUSE Linux (01)            #
@@ -709,7 +709,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm8.vm.provision "shell", inline: <<-SHELL
 			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.18/24 gw4 172.16.100.1 autoconnect yes
 			nmcli connection up eth1
@@ -735,7 +735,7 @@ Vagrant.configure("2") do |config|
 			systemctl set-default multi-user.target
 			SHELL
 		vm8.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #            openSUSE Linux (02)            #
@@ -786,7 +786,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm9.vm.provision "shell", inline: <<-SHELL
 			nmcli connection add type ethernet ifname eth1 con-name eth1 ip4 172.16.100.19/24 gw4 172.16.100.1 autoconnect yes
 			nmcli connection up eth1
@@ -812,7 +812,7 @@ Vagrant.configure("2") do |config|
 			systemctl set-default multi-user.target
 			SHELL
 		vm9.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #            PreVu 'APT' (Debian)           #
@@ -875,7 +875,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		vm98.vm.provision "shell", inline: <<-SHELL
 			apt-get update
 			apt-get install -y linux-headers-generic dkms wget
@@ -900,7 +900,7 @@ Vagrant.configure("2") do |config|
 			echo Done.
 			SHELL
 		vm98.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 
 #############################################
 #            PreVu 'YUM' (Rocky)            #
@@ -951,7 +951,7 @@ Vagrant.configure("2") do |config|
 						"--nat-network2", "VSL_Network",
 						"--nicpromisc2", "allow-all"
 						]
-			end
+		end
 		# Rocky Linux Guest Additions Failure to load...
 		# Run as root: yum install elfutils-libelf-devel -y
 		vm99.vm.provision "shell", inline: $vsl_hosts
@@ -976,5 +976,5 @@ Vagrant.configure("2") do |config|
 			systemctl set-default multi-user.target
 			SHELL
 		vm99.vm.provision "shell", inline: $resolv_conf
-		end
+	end
 end
