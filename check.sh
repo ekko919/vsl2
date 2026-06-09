@@ -80,6 +80,16 @@ echo -e "Expected : VirtualBox $EXP_VBX.x  |  Vagrant $EXP_VGR.x  |  vagrant-hos
 
 section "Tools"
 
+# Kernel headers and modules (Linux only — required for VirtualBox to function)
+if [[ "$OS_TYPE" == "linux" ]]; then
+    KVER=$(uname -r)
+    if [[ -d "/usr/src/linux-headers-${KVER}" ]]; then
+        pass "Kernel headers ($KVER)"
+    else
+        fail "Kernel headers not installed ($KVER) — run: sudo apt-get install -y linux-headers-amd64 linux-headers-${KVER}"
+    fi
+fi
+
 # VirtualBox
 VBX_FOUND=0
 if cmd_exists VBoxManage; then
@@ -91,6 +101,14 @@ if cmd_exists VBoxManage; then
         warn "VirtualBox $VBX_VER — expected $EXP_VBX.x — other versions may work but are untested"
     fi
     VBX_FOUND=1
+    # Verify kernel modules compiled and loaded (Linux only)
+    if [[ "$OS_TYPE" == "linux" ]]; then
+        if lsmod 2>/dev/null | grep -q vboxdrv; then
+            pass "VirtualBox kernel modules loaded"
+        else
+            fail "VirtualBox kernel modules not loaded — run: sudo /sbin/vboxconfig"
+        fi
+    fi
 else
     fail "VirtualBox not found — install $EXP_VBX.x from https://virtualbox.org"
 fi

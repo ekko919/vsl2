@@ -23,6 +23,7 @@ esac
 
 LINUX_FLAVOR="unknown"
 LINUX_CODENAME="unknown"
+KVER=$(uname -r)
 if [[ "$OS_TYPE" == "linux" && -f /etc/os-release ]]; then
     . /etc/os-release
     LINUX_CODENAME="${VERSION_CODENAME:-unknown}"
@@ -97,6 +98,19 @@ ext_pack_cmds() {
 # ── Tools ─────────────────────────────────────────────────────────────────────
 section "Tools"
 
+# Kernel headers (Linux only)
+if [[ "$OS_TYPE" == "linux" ]]; then
+    if [[ -d "/usr/src/linux-headers-${KVER}" ]]; then
+        ok "Kernel headers ($KVER)"
+    else
+        need "Kernel headers not installed ($KVER) — required for VirtualBox kernel modules"
+        case "$LINUX_FLAVOR" in
+            debian) cmd "sudo apt-get install -y linux-headers-amd64 linux-headers-$KVER" ;;
+            rhel)   cmd "sudo dnf install -y kernel-devel-$KVER kernel-headers-$KVER" ;;
+        esac
+    fi
+fi
+
 # Homebrew (macOS only)
 if [[ "$OS_TYPE" == "macos" ]]; then
     if cmd_exists brew; then
@@ -148,6 +162,7 @@ else
                     cmd "    | sudo tee /etc/apt/sources.list.d/virtualbox.list"
                     cmd "sudo apt-get update"
                     cmd "sudo apt-get install -y virtualbox-${EXP_VBX}"
+                    cmd "sudo /sbin/vboxconfig"
                     ;;
                 rhel)
                     cmd "sudo dnf install -y kernel-devel kernel-headers gcc make perl"
