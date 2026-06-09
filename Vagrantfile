@@ -124,7 +124,6 @@ Vagrant.configure("2") do |config|
 
 	# Configure vagrant-vbguest Plugin
 	if Vagrant.has_plugin? "vagrant-vbguest"
-		config.vbguest.iso_path = ["vbguest/VBoxGuestAdditions.iso"]
 		config.vbguest.no_install = true
 		config.vbguest.auto_update = false
 		config.vbguest.no_remote = true
