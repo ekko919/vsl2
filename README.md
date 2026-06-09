@@ -12,6 +12,7 @@ Hosts 11 VMs across multiple Linux distributions for IaaS development and testin
 - [Host Configuration](#host-configuration)
 - [Vagrant Boxes](#vagrant-boxes)
 - [Local Customization](#local-customization)
+- [Setup Script](#setup-script)
 - [Quick Start](#quick-start)
 - [Common Commands](#common-commands)
 - [SSH Key Convention](#ssh-key-convention)
@@ -144,16 +145,32 @@ alongside the active line in each VM block.
 
 ---
 
-## Quick Start
+## Setup Script
 
-Run the pre-flight check first to verify all prerequisites and host configuration:
+`setup.sh` detects missing or misconfigured components and prints the exact commands
+to install or fix them. Nothing is executed automatically — all commands are printed
+for review before you run them.
 
 ```bash
-./check.sh
+./setup.sh
 ```
 
-This checks VirtualBox, Vagrant, plugins, host-only adapter, NAT network, local boxes,
-and port availability — and tells you exactly what needs to be fixed before `vagrant up`.
+Covers: VirtualBox, Extension Pack, Vagrant, plugins, `/etc/vbox/networks.conf`,
+`vboxnet1` host-only adapter, and `VSL_Network` NAT network.
+
+Supported platforms: macOS (Homebrew) and Linux (Debian/Ubuntu, RHEL/Rocky/Alma/Oracle).
+
+---
+
+## Quick Start
+
+Run `setup.sh` first to install any missing prerequisites, then `check.sh` to verify
+the environment is ready:
+
+```bash
+./setup.sh   # print install commands for anything missing
+./check.sh   # verify all prerequisites and host configuration
+```
 
 After all checks pass:
 
