@@ -554,8 +554,8 @@ Vagrant.configure("2") do |config|
 			nmcli con delete "Wired connection 1" 2>/dev/null || true
 			SHELL
 		vm6.vm.provision "shell", inline: <<-SHELL
-			apt update
-			apt install -y linux-headers-generic dkms
+			apt-get update
+			apt-get install -y linux-headers-generic dkms
 			SHELL
 		vm6.vm.provision "shell", inline: $vsl_hosts
 		vm6.vm.provision "shell", inline: <<-SHELL
@@ -635,8 +635,8 @@ Vagrant.configure("2") do |config|
 			nmcli con delete "Wired connection 1" 2>/dev/null || true
 			SHELL
 		vm7.vm.provision "shell", inline: <<-SHELL
-			apt update
-			apt install -y linux-headers-generic dkms
+			apt-get update
+			apt-get install -y linux-headers-generic dkms
 			SHELL
 		vm7.vm.provision "shell", inline: $vsl_hosts
 		vm7.vm.provision "shell", inline: <<-SHELL
