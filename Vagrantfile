@@ -106,8 +106,6 @@ SCRIPT
 Vagrant.configure("2") do |config|
 	config.vm.box_check_update = true
 	config.vm.boot_timeout = 300
-#	config.vm.box_url = "https://portal.cloud.hashicorp.com/vagrant/discover"
-
 	#SSH Key Config
 	config.ssh.forward_agent = false
 	config.ssh.insert_key = false
@@ -134,9 +132,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "otto-svr" do |vm1|
-		vm1.vm.network :forwarded_port, guest: 22, host: 2211, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm1.vm.network :forwarded_port, guest: 22, host: 2211, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm1.vm.network :forwarded_port, guest: 80, host: 8011, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm1.vm.network :forwarded_port, guest: 443, host: 11443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm1.vm.hostname = "otto-svr"
 		vm1.vm.box = "ekko919/Alma-8.x"
 		vm1.vm.box_version = "2026.04.02"
@@ -145,7 +143,6 @@ Vagrant.configure("2") do |config|
 			owner: "vagrant", group: "vboxsf"
 		vm1.vm.network "private_network",
 						ip: "172.16.100.11",
-						gateway: "172.16.100.254",
 						name: "vboxnet1"                                  # macOS/Linux Naming Schema
 #						name: "VirtualBox Host-Only Ethernet Adapter#2"   # Windows Network Naming Schema
 		vm1.vm.provider "virtualbox" do |vb|
@@ -214,9 +211,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "rhel-01" do |vm2|
-		vm2.vm.network :forwarded_port, guest: 22, host: 2212, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm2.vm.network :forwarded_port, guest: 22, host: 2212, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm2.vm.network :forwarded_port, guest: 80, host: 8012, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm2.vm.network :forwarded_port, guest: 443, host: 12443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm2.vm.hostname = "rhel-01"
 		vm2.vm.box = "ekko919/Rocky-8.x"
 		vm2.vm.box_version = "2026.04.02"
@@ -287,9 +284,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "rhel-02" do |vm3|
-		vm3.vm.network :forwarded_port, guest: 22, host: 2213, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm3.vm.network :forwarded_port, guest: 22, host: 2213, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm3.vm.network :forwarded_port, guest: 80, host: 8013, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm3.vm.network :forwarded_port, guest: 443, host: 13443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm3.vm.hostname = "rhel-02"
 		vm3.vm.box = "ekko919/Rocky-9.x"
 		vm3.vm.box_version = "2026.04.02"
@@ -360,9 +357,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "oracle-01" do |vm4|
-		vm4.vm.network :forwarded_port, guest: 22, host: 2214, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm4.vm.network :forwarded_port, guest: 22, host: 2214, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm4.vm.network :forwarded_port, guest: 80, host: 8014, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm4.vm.network :forwarded_port, guest: 443, host: 14443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm4.vm.hostname = "oracle-01"
 		vm4.vm.box = "ekko919/Oracle-8.x"
 		vm4.vm.box_version = "2026.04.02"
@@ -433,9 +430,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "oracle-02" do |vm5|
-		vm5.vm.network :forwarded_port, guest: 22, host: 2215, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm5.vm.network :forwarded_port, guest: 80, host: 8015, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm5.vm.network :forwarded_port, guest: 443, host: 15443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm5.vm.network :forwarded_port, guest: 22, host: 2215, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm5.vm.network :forwarded_port, guest: 80, host: 8015, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm5.vm.network :forwarded_port, guest: 443, host: 15443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm5.vm.hostname = "oracle-02"
 		vm5.vm.box = "ekko919/Oracle-8.x"
 		vm5.vm.box_version = "2026.04.02"
@@ -506,9 +503,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "debian-01" do |vm6|
-		vm6.vm.network :forwarded_port, guest: 22, host: 2216, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm6.vm.network :forwarded_port, guest: 22, host: 2216, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm6.vm.network :forwarded_port, guest: 80, host: 8016, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm6.vm.network :forwarded_port, guest: 443, host: 16443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm6.vm.hostname = "debian-01"
 		vm6.vm.box = "ekko919/Debian-11.x"
 		vm6.vm.box_version = "2026.04.02"
@@ -587,9 +584,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "debian-02" do |vm7|
-		vm7.vm.network :forwarded_port, guest: 22, host: 2217, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm7.vm.network :forwarded_port, guest: 22, host: 2217, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm7.vm.network :forwarded_port, guest: 80, host: 8017, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm7.vm.network :forwarded_port, guest: 443, host: 17443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm7.vm.hostname = "debian-02"
 		vm7.vm.box = "ekko919/Debian-12.x"
 		vm7.vm.box_version = "2026.04.02"
@@ -668,9 +665,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "suse-01" do |vm8|
-		vm8.vm.network :forwarded_port, guest: 22, host: 2218, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm8.vm.network :forwarded_port, guest: 80, host: 8018, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm8.vm.network :forwarded_port, guest: 22, host: 2218, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm8.vm.network :forwarded_port, guest: 80, host: 8018, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm8.vm.network :forwarded_port, guest: 443, host: 18443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm8.vm.hostname = "suse-01"
 		vm8.vm.box = "ekko919/SUSE-15.x"
 		vm8.vm.box_version = "2026.04.03"
@@ -745,9 +742,9 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "suse-02" do |vm9|
-		vm9.vm.network :forwarded_port, guest: 22, host: 2219, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm9.vm.network :forwarded_port, guest: 80, host: 8019, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm9.vm.network :forwarded_port, guest: 443, host: 19443, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm9.vm.network :forwarded_port, guest: 22, host: 2219, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm9.vm.network :forwarded_port, guest: 80, host: 8019, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm9.vm.network :forwarded_port, guest: 443, host: 19443, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm9.vm.hostname = "suse-02"
 		vm9.vm.box = "ekko919/SUSE-15.x"
 		vm9.vm.box_version = "2026.04.03"
@@ -823,9 +820,9 @@ Vagrant.configure("2") do |config|
 
 	config.vm.define "pvu-98" do |vm98|
 		vm98.ssh.shell = "/bin/bash"    # Declare VM Shell Environment
-		vm98.vm.network :forwarded_port, guest: 22, host: 2298, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm98.vm.network :forwarded_port, guest: 80, host: 8098, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm98.vm.network :forwarded_port, guest: 22, host: 2298, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm98.vm.network :forwarded_port, guest: 80, host: 8098, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm98.vm.network :forwarded_port, guest: 443, host: 9843, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm98.vm.hostname = "pvu-98.vsl.lab"
 		vm98.vm.box = "ekko919/Debian-12.x"
 		vm98.vm.box_version = "2025.08.18"
@@ -880,12 +877,11 @@ Vagrant.configure("2") do |config|
 						]
 			end
 		vm98.vm.provision "shell", inline: <<-SHELL
-			apt update
-			apt install -y linux-headers-generic dkms wget
+			apt-get update
+			apt-get install -y linux-headers-generic dkms wget
 			SHELL
 		vm98.vm.provision "shell", inline: $vsl_hosts
 		vm98.vm.provision "shell", inline: <<-SHELL
-			apt-get update
 			apt-get install nano gcc make perl linux-headers-$(uname -r) -y
 			apt-get install bind9utils -y
 			systemctl set-default multi-user.target
@@ -911,11 +907,12 @@ Vagrant.configure("2") do |config|
 #############################################
 
 	config.vm.define "pvu-99" do |vm99|
-		vm99.vm.network :forwarded_port, guest: 22, host: 2299, host_ip: "0.0.0.0", id: "ssh", auto_correct: true
-		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "0.0.0.0", id: "http", auto_correct: true
-		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "0.0.0.0", id: "https", auto_correct: true
+		vm99.vm.network :forwarded_port, guest: 22, host: 2299, host_ip: "127.0.0.1", id: "ssh", auto_correct: true
+		vm99.vm.network :forwarded_port, guest: 80, host: 8099, host_ip: "127.0.0.1", id: "http", auto_correct: true
+		vm99.vm.network :forwarded_port, guest: 443, host: 9943, host_ip: "127.0.0.1", id: "https", auto_correct: true
 		vm99.vm.hostname = "pvu-99.vsl.lab"
 		vm99.vm.box = "ekko919/Rocky-9.x"
+		vm99.vm.box_version = "2026.04.02"
 		vm99.vm.synced_folder ".", "/vagrant", disabled: true
 		vm99.vm.synced_folder "tmp", "/media/tmp", create: true,
 			owner: "vagrant", group: "vboxsf"
