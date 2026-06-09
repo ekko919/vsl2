@@ -22,8 +22,10 @@ case "$(uname -s)" in
 esac
 
 LINUX_FLAVOR="unknown"
+LINUX_CODENAME="unknown"
 if [[ "$OS_TYPE" == "linux" && -f /etc/os-release ]]; then
     . /etc/os-release
+    LINUX_CODENAME="${VERSION_CODENAME:-unknown}"
     case "${ID_LIKE:-${ID:-}}" in
         *debian*|*ubuntu*) LINUX_FLAVOR="debian" ;;
         *rhel*|*centos*|*fedora*) LINUX_FLAVOR="rhel" ;;
@@ -45,7 +47,7 @@ major_minor() { echo "$1" | cut -d. -f1,2; }
 section()     { echo -e "\n${BLD}${CYN}── $1${RST}"; }
 ok()          { echo -e "  ${GRN}[OK]${RST}   $1"; }
 need()        { echo -e "\n  ${YEL}[NEED]${RST} $1"; ACTIONS=$((ACTIONS + 1)); }
-cmd()         { echo -e "         ${CYN}$1${RST}"; }
+cmd()         { printf '         \033[0;36m%s\033[0m\n' "$1"; }
 note()        { echo -e "         ${YEL}# $1${RST}"; }
 
 # ── Header ────────────────────────────────────────────────────────────────────
@@ -142,7 +144,7 @@ else
                     cmd "wget -O- https://www.virtualbox.org/download/oracle_vbox_2016.asc \\"
                     cmd "    | sudo gpg --dearmor --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg"
                     cmd "echo \"deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] \\"
-                    cmd "    https://download.virtualbox.org/virtualbox/debian \$(lsb_release -cs) contrib\" \\"
+                    cmd "    https://download.virtualbox.org/virtualbox/debian $LINUX_CODENAME contrib\" \\"
                     cmd "    | sudo tee /etc/apt/sources.list.d/virtualbox.list"
                     cmd "sudo apt-get update"
                     cmd "sudo apt-get install -y virtualbox-${EXP_VBX}"
@@ -218,7 +220,7 @@ else
                     cmd "wget -O- https://apt.releases.hashicorp.com/gpg \\"
                     cmd "    | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg"
                     cmd "echo \"deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \\"
-                    cmd "    https://apt.releases.hashicorp.com \$(lsb_release -cs) main\" \\"
+                    cmd "    https://apt.releases.hashicorp.com $LINUX_CODENAME main\" \\"
                     cmd "    | sudo tee /etc/apt/sources.list.d/hashicorp.list"
                     cmd "sudo apt-get update"
                     cmd "sudo apt-get install -y vagrant"
