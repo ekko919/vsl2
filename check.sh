@@ -174,7 +174,13 @@ fi
 
 # Host-only adapter — name differs by OS
 if [[ $VBX_FOUND -eq 1 ]]; then
-    HO_INFO=$(VBoxManage list hostonlyifs 2>/dev/null)
+    # VirtualBox 7.x uses hostonlynets (new-style); fall back to hostonlyifs for older installs
+    HO_INFO=$(VBoxManage list hostonlynets 2>/dev/null)
+    HO_IP_FIELD="LowerIP:"
+    if [[ -z "$HO_INFO" ]]; then
+        HO_INFO=$(VBoxManage list hostonlyifs 2>/dev/null)
+        HO_IP_FIELD="IPAddress:"
+    fi
 
     case "$OS_TYPE" in
         macos|linux)
@@ -188,7 +194,7 @@ if [[ $VBX_FOUND -eq 1 ]]; then
     esac
 
     if echo "$HO_INFO" | grep -q "Name:.*${ADAPTER_NAME}"; then
-        HO_IP=$(echo "$HO_INFO" | awk "/Name:.*${ADAPTER_NAME}/{found=1} found && /IPAddress:/{print \$2; exit}")
+        HO_IP=$(echo "$HO_INFO" | awk "/^Name:/{found=0} /Name:.*${ADAPTER_NAME}/{found=1} found && /${HO_IP_FIELD}/{print \$2; exit}")
         if [[ "$HO_IP" == "172.16.100.1" ]]; then
             pass "$ADAPTER_LABEL — IP $HO_IP"
         else
